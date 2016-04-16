@@ -4,16 +4,16 @@ module Infer where
 
 import Ast
 import Type
+import State
 import Data.IORef
 import System.IO.Unsafe(unsafePerformIO)
 
 currentId :: IORef Int
-currentId = unsafePerformIO $ newIORef 0
+currentId = createState 0
 
 nextId :: IO Int
 nextId = do
     v <- readIORef currentId
-    _ <- putStrLn $ show v
     writeIORef currentId (v + 1)
     return v
 
@@ -23,7 +23,7 @@ resetId = do
 
 newVar :: Rank -> T
 newVar level =
-    TVar $ unsafePerformIO $ newIORef $ Unbound (unsafePerformIO nextId) level
+    TVar $ createState $ Unbound (unsafePerformIO nextId) level
 
 newGenVar :: () -> T
-newGenVar () = TVar $ unsafePerformIO $ newIORef $ Generic (unsafePerformIO nextId)
+newGenVar () = TVar $ createState $ Generic (unsafePerformIO nextId)
