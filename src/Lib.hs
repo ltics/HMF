@@ -4,6 +4,7 @@ module Lib
 
 import Ast
 import Type
+import Infer
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
