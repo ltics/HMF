@@ -7,9 +7,11 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-    describe "type stringify test" $ do it "stringify arrow type" $ show (TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] $ TVar (createState (Generic 5))) `shouldBe` "\"\\8704a,b,c. (a, b) \\8594 c\""
-    describe "stringify const type" $ do
-      it "stringify const type" $ show (TConst "int") `shouldBe` "\"int\""
+    describe "type stringify test" $ do
+      it "stringify arrow type" $
+        show (TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] $ TVar (createState (Generic 5))) `shouldBe` "\"\\8704a,b,c. (a, b) \\8594 c\""
+      it "stringify const type" $
+        show (TConst "int") `shouldBe` "\"int\""
     describe "type equality test" $ do
       it "eq" $
         (TVar $ createState $ Generic 3) == (TVar $ createState $ Generic 3) `shouldBe` True

@@ -76,17 +76,12 @@ prType' t =
 
 prType :: T -> String
 prType t = unsafePerformIO $ do
-    idNameMapReset
-    countReset
     let lit = prType' t
     c <- lit `deepseq` readIORef count
     idNames <- readIORef idNameMap
-    putStrLn $ show c
-    putStrLn $ show idNames
     let lit' = if c > 0
                then "∀" ++ intercalate "," (sort $ M.elems idNames) ++ ". " ++ lit
                else lit
+    idNameMapReset
     countReset
-    _ <- writeIORef idNameMap M.empty
-    _ <- writeIORef count 0
     return lit'
