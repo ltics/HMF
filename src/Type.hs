@@ -60,7 +60,7 @@ prType' t =
                                                    (TArrow _ _) -> "(" ++ prType' param ++ ")" ++ " → " ++ prType' rtn
                                                    _ -> prType' param ++ " → " ++ prType' rtn
                                     _ -> "(" ++ intercalate ", " (map prType' params) ++ ")" ++ " → " ++ prType' rtn
-         TApp ty tys -> prType' ty ++ "[" ++ intercalate ", " (map prType' tys) ++ "]"
+         TApp fn args -> prType' fn ++ "[" ++ intercalate ", " (map prType' args) ++ "]"
          TVar var -> case readState var of
                            Unbound tvId _ -> "_" ++ show tvId
                            Link t' -> prType' t'
@@ -70,8 +70,8 @@ prType' t =
                                                            Nothing -> unsafePerformIO $ do
                                                             c <- readIORef count
                                                             let name = nameOfInt c
-                                                            _ <- modifyIORef idNameMap (\m' -> M.insert tvId name m')
-                                                            _ <- modifyIORef count (+1)
+                                                            modifyIORef idNameMap (\m' -> M.insert tvId name m')
+                                                            modifyIORef count (+1)
                                                             return name
 
 prType :: T -> String
