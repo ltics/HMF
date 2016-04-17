@@ -91,3 +91,15 @@ unify' ty1 ty2 = canNotUnifyError ty1 ty2
 unify :: T -> T -> Infer ()
 unify ty1 ty2 = do
     if ty1 == ty2 then return () else unify' ty1 ty2
+
+generalize :: Rank -> T -> T
+generalize level t = case t of
+                        TArrow params rtn -> TArrow (map (generalize level) params) (generalize level rtn)
+                        TApp fn args -> TApp (generalize level fn) (map (generalize level) args)
+                        TVar var -> case readState var of
+                                    Link t' -> generalize level t'
+                                    Unbound i otherLevel -> if otherLevel > level
+                                                                then (TVar $ createState $ Generic i)
+                                                                else t
+                                    _ -> t
+                        _ -> t
