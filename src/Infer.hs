@@ -5,6 +5,7 @@ module Infer where
 -- import Ast
 import Type
 import State
+import qualified Data.Map as M
 import Data.IORef
 import System.IO.Unsafe(unsafePerformIO)
 import Control.Exception
@@ -103,3 +104,24 @@ generalize level t = case t of
                                                                 else t
                                     _ -> t
                         _ -> t
+
+instantiate :: Rank -> T -> T
+instantiate level t = unsafePerformIO $ do
+    idVarMap <- newIORef (M.empty :: (M.Map Int T))
+    let inst = f t where f ty = case ty of
+                                TConst _ -> ty
+                                TArrow params rtn -> TArrow (map f params) $ f rtn
+                                TApp fn args -> TApp (f fn) (map f args)
+                                TVar var -> case readState var of
+                                            Unbound _ _ -> ty
+                                            Link ty' -> f ty'
+                                            Generic i -> let m = readState idVarMap in
+                                                            case M.lookup i m of
+                                                             Just var' -> var'
+                                                             Nothing -> unsafePerformIO $ do
+                                                                var' <- newVar level
+                                                                modifyIORef idVarMap (\m' -> M.insert i var' m')
+                                                                return var'
+    return inst
+
+
