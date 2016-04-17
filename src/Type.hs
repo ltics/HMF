@@ -45,10 +45,10 @@ idNameMap = createState M.empty
 count :: IORef Int
 count = createState 0
 
-idNameMapReset :: IO ()
+idNameMapReset :: Infer ()
 idNameMapReset = writeIORef idNameMap M.empty
 
-countReset :: IO ()
+countReset :: Infer ()
 countReset = writeIORef count 0
 
 prType' :: T -> String

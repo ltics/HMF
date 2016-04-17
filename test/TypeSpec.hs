@@ -29,4 +29,3 @@ spec = do
         (TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] $ TVar (createState (Generic 5)))
          == (TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] $ TVar (createState (Generic 6)))
          `shouldBe` False
-

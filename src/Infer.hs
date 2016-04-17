@@ -13,24 +13,25 @@ import Control.Monad
 currentId :: IORef Int
 currentId = createState 0
 
-nextId :: IO Int
+nextId :: Infer Int
 nextId = do
     v <- readIORef currentId
     writeIORef currentId (v + 1)
     return v
 
-resetId :: IO ()
+resetId :: Infer ()
 resetId = do
     writeIORef currentId 0
 
-newVar :: Rank -> T
-newVar level =
-    TVar $ createState $ Unbound (unsafePerformIO nextId) level
+newVar :: Rank -> Infer T
+newVar level = do
+    next <- nextId
+    return $ TVar $ createState $ Unbound next level
 
 newGenVar :: () -> T
 newGenVar () = TVar $ createState $ Generic (unsafePerformIO nextId)
 
-occursCheckAdjustLevels :: Int -> Int -> T -> IO ()
+occursCheckAdjustLevels :: Int -> Int -> T -> Infer ()
 occursCheckAdjustLevels tvId tvLevel t = case t of
     TConst _ -> return ()
     TArrow params rtn -> do
@@ -54,10 +55,10 @@ occursCheckAdjustLevels tvId tvLevel t = case t of
                             return ()
                       Generic _ -> assert False $ return ()
 
-canNotUnifyError :: T -> T -> IO ()
+canNotUnifyError :: T -> T -> Infer ()
 canNotUnifyError t1 t2 = error $ "cannot unify types " ++ show t1 ++ " and " ++ show t2
 
-unify' :: T -> T -> IO ()
+unify' :: T -> T -> Infer ()
 unify' (TConst name1) (TConst name2) | name1 == name2 = return ()
 unify' (TApp fn1 args1) (TApp fn2 args2) = do
     unify fn1 fn2
@@ -85,7 +86,8 @@ unify' ty1 t2@(TVar ty2) = case readState ty2 of
                                 occursCheckAdjustLevels id2 level2 ty1
                                 writeIORef ty2 $ Link ty1
                             _ -> canNotUnifyError ty1 t2
-unify' ty1 ty2 = error $ "cannot unify types " ++ show ty1 ++ " and " ++ show ty2
+unify' ty1 ty2 = canNotUnifyError ty1 ty2
 
-unify :: T -> T -> IO ()
-unify ty1 ty2 = if ty1 == ty2 then return () else unify' ty1 ty2
+unify :: T -> T -> Infer ()
+unify ty1 ty2 = do
+    if ty1 == ty2 then return () else unify' ty1 ty2
