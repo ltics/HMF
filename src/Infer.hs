@@ -2,7 +2,7 @@
 
 module Infer where
 
--- import Ast
+import Ast
 import Type
 import State
 import qualified Data.Map as M
@@ -105,8 +105,8 @@ generalize level t = case t of
                                     _ -> t
                         _ -> t
 
-instantiate :: Rank -> T -> T
-instantiate level t = unsafePerformIO $ do
+instantiate :: Rank -> T -> Infer T
+instantiate level t = do
     idVarMap <- newIORef (M.empty :: (M.Map Int T))
     let inst = f t where f ty = case ty of
                                 TConst _ -> ty
@@ -124,4 +124,38 @@ instantiate level t = unsafePerformIO $ do
                                                                 return var'
     return inst
 
+matchFunType :: Int -> T -> ([T], T)
+matchFunType numParams t = case t of
+                            TArrow params rtn -> if length params /= numParams
+                                                then error "unexpected number of arguments"
+                                                else (params, rtn)
+                            TVar var -> case readState var of
+                                        Link ty -> matchFunType numParams ty
+                                        Unbound _ level -> unsafePerformIO $ do
+                                            paramTyList <- mapM (\_ -> newVar level) [1..numParams]
+                                            rtnTy <- newVar level
+                                            writeIORef var $ Link $ TArrow paramTyList rtnTy
+                                            return (paramTyList, rtnTy)
+                                        _ -> error "expected a function"
+                            _ -> error "expected a function"
 
+infer :: (M.Map Ast.Name T) -> Rank -> Expr -> Infer T
+infer env level e = case e of
+                        EVar name -> case M.lookup name env of
+                                        Just t -> instantiate level t
+                                        Nothing -> error $ "variable " ++ name ++ " not found"
+                        EFun params body -> do
+                            paramTyList <- mapM (\_ -> newVar level) params
+                            let fnEnv = foldl (\env' (n, t) -> M.insert n t env') env $ zip params paramTyList
+                            rtnTy <- infer fnEnv level body
+                            return $ TArrow paramTyList rtnTy
+                        ELet name value body -> do
+                            valueTy <- infer env (level + 1) value
+                            let generalizedTy = generalize level valueTy
+                            infer (M.insert name generalizedTy env) level body
+                        ECall fn args -> do
+                            fnTy <- infer env level fn
+                            let (paramTyList, rtnTy) = matchFunType (length args) fnTy
+                            argTyList <- mapM (\argExpr -> infer env level argExpr) args
+                            mapM_ (\(paramTy, argTy) -> unify paramTy argTy) $ zip paramTyList argTyList
+                            return rtnTy

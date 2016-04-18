@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 module InferSpec where
 
 import Type
@@ -10,6 +8,10 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
+    describe "create var" $ do
+      it "should create vars" $ do
+        params <- mapM (\_ -> newVar 0) [1..3]
+        show params `shouldBe` "[\"_0\",\"_1\",\"_2\"]"
     describe "unification test" $ do
       it "unify arrow type" $ do
         a <- newVar 0
