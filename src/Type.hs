@@ -4,10 +4,11 @@ module Type where
 
 import State
 import Data.List (intercalate, sort)
-import qualified Data.Map as M
 import Data.IORef
 import System.IO.Unsafe(unsafePerformIO)
 import Control.DeepSeq
+import qualified Data.Map as M
+import qualified Text.PrettyPrint as PP
 
 type Name = String
 type Id = Int -- type variable identifier
@@ -33,7 +34,7 @@ instance Eq T where
     _ == _ = False
 
 instance Show T where
-    showsPrec _ x = shows $ prType x
+    showsPrec _ x = shows $ PP.text $ prType x
 
 nameOfInt :: Int -> String
 nameOfInt i = let name = [(toEnum $ 97 + i `mod` 26) :: Char]

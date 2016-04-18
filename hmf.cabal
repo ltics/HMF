@@ -21,10 +21,9 @@ library
                      , State
                      , Infer
   build-depends:       base >= 4.7 && < 5
-                     , unicode-show
-                     , bytestring
                      , containers
                      , deepseq
+                     , pretty
   default-language:    Haskell2010
 
 executable hmf-exe
@@ -45,6 +44,7 @@ test-suite hmf-test
                      , hmf
                      , hspec >= 1.3
                      , QuickCheck
+                     , pretty
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

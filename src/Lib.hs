@@ -6,7 +6,7 @@ import Ast
 import Type
 import State
 import Infer
-import Text.Show.Unicode
+import qualified Text.PrettyPrint as PP
 
 uni :: Infer T
 uni = do
@@ -19,4 +19,4 @@ uni = do
 someFunc :: IO ()
 someFunc = do
     t <- uni
-    uprint t
+    putStrLn $ show t

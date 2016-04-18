@@ -159,3 +159,8 @@ infer env level e = case e of
                             argTyList <- mapM (\argExpr -> infer env level argExpr) args
                             mapM_ (\(paramTy, argTy) -> unify paramTy argTy) $ zip paramTyList argTyList
                             return rtnTy
+
+ttt :: IO T
+ttt = do
+    t <- infer M.empty 0 $ EFun ["x"] $ EVar "x"
+    return $ generalize (-1) t
