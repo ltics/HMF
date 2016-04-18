@@ -7,7 +7,6 @@ import Type
 import State
 import qualified Data.Map as M
 import Data.IORef
-import System.IO.Unsafe(unsafePerformIO)
 import Control.Exception
 import Control.Monad
 
@@ -142,19 +141,22 @@ instantiate level t = do
     inst <- f t
     return inst
 
-matchFunType :: Int -> T -> ([T], T)
+matchFunType :: Int -> T -> Infer ([T], T)
 matchFunType numParams t = case t of
-                            TArrow params rtn -> if length params /= numParams
-                                                then error "unexpected number of arguments"
-                                                else (params, rtn)
-                            TVar var -> case readState var of
-                                        Link ty -> matchFunType numParams ty
-                                        Unbound _ level -> unsafePerformIO $ do
-                                            paramTyList <- mapM (\_ -> newVar level) [1..numParams]
-                                            rtnTy <- newVar level
-                                            writeIORef var $ Link $ TArrow paramTyList rtnTy
-                                            return (paramTyList, rtnTy)
-                                        _ -> error "expected a function"
+                            TArrow params rtn -> do
+                                if length params /= numParams
+                                then error "unexpected number of arguments"
+                                else return (params, rtn)
+                            TVar var -> do
+                                varV <- readIORef var
+                                case varV of
+                                    Link ty -> matchFunType numParams ty
+                                    Unbound _ level -> do
+                                        paramTyList <- mapM (\_ -> newVar level) [1..numParams]
+                                        rtnTy <- newVar level
+                                        writeIORef var $ Link $ TArrow paramTyList rtnTy
+                                        return (paramTyList, rtnTy)
+                                    _ -> error "expected a function"
                             _ -> error "expected a function"
 
 infer :: (M.Map Ast.Name T) -> Rank -> Expr -> Infer T
@@ -173,7 +175,7 @@ infer env level e = case e of
                             infer (M.insert name generalizedTy env) level body
                         ECall fn args -> do
                             fnTy <- infer env level fn
-                            let (paramTyList, rtnTy) = matchFunType (length args) fnTy
+                            (paramTyList, rtnTy) <- matchFunType (length args) fnTy
                             argTyList <- mapM (\argExpr -> infer env level argExpr) args
                             mapM_ (\(paramTy, argTy) -> unify paramTy argTy) $ zip paramTyList argTyList
                             return rtnTy
