@@ -36,7 +36,7 @@ instance Eq T where
 instance Show T where
     showsPrec _ x = shows $ PP.text $ prType x
 
-nameOfInt :: Int -> String
+nameOfInt :: Int -> Name
 nameOfInt i = let name = [(toEnum $ 97 + i `mod` 26) :: Char]
               in if i >= 26 then name ++ show (i `quot` 26) else name
 
@@ -52,32 +52,45 @@ idNameMapReset = writeIORef idNameMap M.empty
 countReset :: Infer ()
 countReset = writeIORef count 0
 
-prType' :: T -> String
+prType' :: T -> Infer Name
 prType' t =
     case t of
-         TConst name -> name
+         TConst name -> do return name
          TArrow params rtn -> case params of
                                     [param] -> case param of
-                                                   (TArrow _ _) -> "(" ++ prType' param ++ ")" ++ " → " ++ prType' rtn
-                                                   _ -> prType' param ++ " → " ++ prType' rtn
-                                    _ -> "(" ++ intercalate ", " (map prType' params) ++ ")" ++ " → " ++ prType' rtn
-         TApp fn args -> prType' fn ++ "[" ++ intercalate ", " (map prType' args) ++ "]"
+                                                   (TArrow _ _) -> do
+                                                        paramV <- prType' param
+                                                        rtnV <- prType' rtn
+                                                        return $ "(" ++ paramV ++ ")" ++ " → " ++ rtnV
+                                                   _ -> do
+                                                        paramV <- prType' param
+                                                        rtnV <- prType' rtn
+                                                        return $ paramV ++ " → " ++ rtnV
+                                    _ -> do
+                                        paramsV <- mapM prType' params
+                                        rtnV <- prType' rtn
+                                        return $ "(" ++ intercalate ", " paramsV ++ ")" ++ " → " ++ rtnV
+         TApp fn args -> do
+            fnV <- prType' fn
+            argsV <- mapM prType' args
+            return $ fnV ++ "[" ++ intercalate ", " argsV ++ "]"
          TVar var -> case readState var of
-                           Unbound tvId _ -> "_" ++ show tvId
+                           Unbound tvId _ -> return $ "_" ++ show tvId
                            Link t' -> prType' t'
-                           Generic tvId -> let m = readState idNameMap in
-                                                           case M.lookup tvId m of
-                                                           Just name -> name
-                                                           Nothing -> unsafePerformIO $ do
-                                                            c <- readIORef count
-                                                            let name = nameOfInt c
-                                                            modifyIORef idNameMap (\m' -> M.insert tvId name m')
-                                                            modifyIORef count (+1)
-                                                            return name
+                           Generic tvId -> do
+                                m <- readIORef idNameMap
+                                case M.lookup tvId m of
+                                    Just name -> return name
+                                    Nothing -> do
+                                        c <- readIORef count
+                                        let name = nameOfInt c
+                                        modifyIORef idNameMap (\m' -> M.insert tvId name m')
+                                        modifyIORef count (+1)
+                                        return name
 
 prType :: T -> String
 prType t = unsafePerformIO $ do
-    let lit = prType' t
+    lit <- prType' t
     c <- lit `deepseq` readIORef count
     idNames <- readIORef idNameMap
     let lit' = if c > 0

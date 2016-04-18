@@ -29,8 +29,10 @@ newVar level = do
     next <- nextId
     return $ TVar $ createState $ Unbound next level
 
-newGenVar :: () -> T
-newGenVar () = TVar $ createState $ Generic (unsafePerformIO nextId)
+newGenVar :: Infer T
+newGenVar = do
+    next <- nextId
+    return $ TVar $ createState $ Generic next
 
 occursCheckAdjustLevels :: Int -> Int -> T -> Infer ()
 occursCheckAdjustLevels tvId tvLevel t = case t of
@@ -93,17 +95,23 @@ unify :: T -> T -> Infer ()
 unify ty1 ty2 = do
     if ty1 == ty2 then return () else unify' ty1 ty2
 
-generalize :: Rank -> T -> T
+generalize :: Rank -> T -> Infer T
 generalize level t = case t of
-                        TArrow params rtn -> TArrow (map (generalize level) params) (generalize level rtn)
-                        TApp fn args -> TApp (generalize level fn) (map (generalize level) args)
+                        TArrow params rtn -> do
+                            paramTyList <- mapM (generalize level) params
+                            rtnTy <- generalize level rtn
+                            return $ TArrow paramTyList rtnTy
+                        TApp fn args -> do
+                            fnTy <- generalize level fn
+                            argTyList <- mapM (generalize level) args
+                            return $ TApp fnTy argTyList
                         TVar var -> case readState var of
                                     Link t' -> generalize level t'
                                     Unbound i otherLevel -> if otherLevel > level
-                                                                then (TVar $ createState $ Generic i)
-                                                                else t
-                                    _ -> t
-                        _ -> t
+                                                                then return (TVar $ createState $ Generic i)
+                                                                else return t
+                                    _ -> return t
+                        _ -> return t
 
 instantiate :: Rank -> T -> Infer T
 instantiate level t = do
@@ -151,7 +159,7 @@ infer env level e = case e of
                             return $ TArrow paramTyList rtnTy
                         ELet name value body -> do
                             valueTy <- infer env (level + 1) value
-                            let generalizedTy = generalize level valueTy
+                            generalizedTy <- generalize level valueTy
                             infer (M.insert name generalizedTy env) level body
                         ECall fn args -> do
                             fnTy <- infer env level fn
@@ -159,8 +167,3 @@ infer env level e = case e of
                             argTyList <- mapM (\argExpr -> infer env level argExpr) args
                             mapM_ (\(paramTy, argTy) -> unify paramTy argTy) $ zip paramTyList argTyList
                             return rtnTy
-
-ttt :: IO T
-ttt = do
-    t <- infer M.empty 0 $ EFun ["x"] $ EVar "x"
-    return $ generalize (-1) t
