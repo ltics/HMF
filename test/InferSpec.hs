@@ -41,4 +41,7 @@ spec = do
       it "should infer most general or principal types for given expression" $ do
         runInferSpecCase M.empty (EFun ["x"] $ EVar "x") "∀a. a → a"
         runInferSpecCase assumptions (EVar "id") "∀a. a → a"
+        runInferSpecCase assumptions (EVar "one") "int"
+        (infer assumptions 0 $ EVar "x") `shouldThrow` errorCall "variable x not found"
+        runInferSpecCase assumptions (ELet "x" (EVar "id") (EVar "x")) "∀a. a → a"
         runInferSpecCase assumptions (EFun ["x"] $ ELet "y" (EFun ["z"] (EVar "x")) $ EVar "y") "∀a,b. a → b → a"
