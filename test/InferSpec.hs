@@ -9,8 +9,8 @@ import qualified Data.Map as M
 import qualified Text.PrettyPrint as PP
 import Test.Hspec
 
-runInferSpecCase expr expect = do
-    t <- infer M.empty 0 expr
+runInferSpecCase assumps expr expect = do
+    t <- infer assumps 0 expr
     gt <- generalize (-1) t
     resetId
     (PP.text . show $ gt) `shouldBe` PP.text expect
@@ -39,5 +39,6 @@ spec = do
         (PP.text . show $ a) `shouldBe` PP.text "int"
     describe "inference test" $ do
       it "should infer most general or principal types for given expression" $ do
-        runInferSpecCase (EFun ["x"] $ EVar "x") "∀a. a → a"
-        runInferSpecCase (EFun ["x"] $ ELet "y" (EFun ["z"] (EVar "x")) $ EVar "y") "∀a,b. a → b → a"
+        runInferSpecCase M.empty (EFun ["x"] $ EVar "x") "∀a. a → a"
+        runInferSpecCase assumptions (EVar "id") "∀a. a → a"
+        runInferSpecCase assumptions (EFun ["x"] $ ELet "y" (EFun ["z"] (EVar "x")) $ EVar "y") "∀a,b. a → b → a"

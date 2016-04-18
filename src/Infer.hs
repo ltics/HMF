@@ -116,20 +116,30 @@ generalize level t = case t of
 instantiate :: Rank -> T -> Infer T
 instantiate level t = do
     idVarMap <- newIORef (M.empty :: (M.Map Int T))
-    let inst = f t where f ty = case ty of
-                                TConst _ -> ty
-                                TArrow params rtn -> TArrow (map f params) $ f rtn
-                                TApp fn args -> TApp (f fn) (map f args)
-                                TVar var -> case readState var of
-                                            Unbound _ _ -> ty
-                                            Link ty' -> f ty'
-                                            Generic i -> let m = readState idVarMap in
-                                                            case M.lookup i m of
-                                                             Just var' -> var'
-                                                             Nothing -> unsafePerformIO $ do
-                                                                var' <- newVar level
-                                                                modifyIORef idVarMap (\m' -> M.insert i var' m')
-                                                                return var'
+    let f ty = case ty of
+                TConst _ -> do return ty
+                TArrow params rtn -> do
+                    paramsV <- mapM f params
+                    rtnV <- f rtn
+                    return $ TArrow paramsV rtnV
+                TApp fn args -> do
+                    fnV <- f fn
+                    argsV <- mapM f args
+                    return $ TApp fnV argsV
+                TVar var -> do
+                    varV <- readIORef var
+                    case varV of
+                        Unbound _ _ -> return ty
+                        Link ty' -> f ty'
+                        Generic i -> do
+                            m <- readIORef idVarMap
+                            case M.lookup i m of
+                                Just var' -> return var'
+                                Nothing -> do
+                                   var' <- newVar level
+                                   modifyIORef idVarMap (\m' -> M.insert i var' m')
+                                   return var'
+    inst <- f t
     return inst
 
 matchFunType :: Int -> T -> ([T], T)
@@ -167,3 +177,9 @@ infer env level e = case e of
                             argTyList <- mapM (\argExpr -> infer env level argExpr) args
                             mapM_ (\(paramTy, argTy) -> unify paramTy argTy) $ zip paramTyList argTyList
                             return rtnTy
+
+assumptions :: M.Map Ast.Name T
+assumptions = M.fromList
+    [("id", (TArrow [TVar (createState (Generic 0))] $ TVar (createState (Generic 0)))),
+     ("head", (TArrow [TApp (TConst "list") [TVar (createState (Generic 0))]] $ TVar (createState (Generic 0)))),
+     ("tail", (TArrow [TApp (TConst "list") [TVar (createState (Generic 0))]] $ TApp (TConst "list") [TVar (createState (Generic 0))]))]
