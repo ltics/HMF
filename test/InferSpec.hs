@@ -50,3 +50,8 @@ spec = do
         runInferSpecCase (EFun ["x"] $ ELet "y" (EFun ["z"] $ EVar "z") $ EVar "y") "∀a,b. a → b → b"
         runInferSpecCase (EFun ["x"] $ ELet "y" (EFun ["z"] $ EVar "x") $ EVar "y") "∀a,b. a → b → a"
         runInferSpecCase (ELet "f" (EFun ["x"] $ EVar "x") $ ELet "id" (EFun ["y"] $ EVar "y") $ ECall (EVar "eq") [EVar "f", EVar "id"]) "bool"
+        runInferSpecCase (ELet "f" (EFun ["x"] $ EVar "x") $ ELet "id" (EFun ["y"] $ EVar "y") $ ECall (ECall (EVar "eq-curry") [EVar "f"]) [EVar "id"]) "bool"
+        runInferSpecCase (ELet "f" (EFun ["x"] $ EVar "x") $ ECall (EVar "eq") [EVar "f", EVar "succ"]) "bool"
+        runInferSpecCase (ELet "f" (EFun ["x"] $ EVar "x") $ ECall (ECall (EVar "eq-curry") [EVar "f"]) [EVar "succ"]) "bool"
+        -- let polymorphism
+        runInferSpecCase (ELet "f" (EFun ["x"] $ EVar "x") $ ECall (EVar "pair") [ECall (EVar "f") [EVar "one"], ECall (EVar "f") [EVar "true"]]) "pair[int, bool]"

@@ -194,12 +194,8 @@ infer env level e = case e of
                             infer (M.insert name generalizedTy env) level body
                         ECall fn args -> do
                             fnTy <- infer env level fn
-                            putStrLn $ "fn type -> " ++ (show fnTy)
                             (paramTyList, rtnTy) <- matchFunType (length args) fnTy
-                            putStrLn $ "param type list -> " ++ (show paramTyList)
-                            putStrLn $ "return type -> " ++ (show rtnTy)
                             argTyList <- mapM (\argExpr -> infer env level argExpr) args
-                            putStrLn $ "arg type list -> " ++ (show argTyList)
                             mapM_ (\(paramTy, argTy) -> unify paramTy argTy) $ zip paramTyList argTyList
                             return rtnTy
 
