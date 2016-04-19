@@ -76,17 +76,24 @@ unify' t1@(TVar ty1) t2@(TVar ty2) = do
     ty1V <- readIORef ty1
     ty2V <- readIORef ty2
     case (ty1V, ty2V) of
-        ((Unbound id1 _), (Unbound id2 _)) -> if id1 == id2
+        ((Unbound id1 level1), (Unbound id2 _)) -> if id1 == id2
                                                 then assert False return ()
                                                 else do
+                                                    occursCheckAdjustLevels id1 level1 t2
                                                     writeIORef ty1 $ Link t2
                                                     return ()
-        ((Unbound _ _), _) -> do
+        ((Unbound id1 level1), _) -> do
+            occursCheckAdjustLevels id1 level1 t2
             writeIORef ty1 $ Link t2
             return ()
-        (_, (Unbound _ _)) -> do
+        ((Link ty1'), _) -> do
+            unify ty1' t2
+        (_, (Unbound id2 level2)) -> do
+            occursCheckAdjustLevels id2 level2 t1
             writeIORef ty2 $ Link t1
             return ()
+        (_, (Link ty2')) -> do
+            unify t1 ty2'
         _ -> canNotUnifyError t1 t2
 unify' t1@(TVar ty1) ty2 = do
     ty1V <- readIORef ty1
@@ -126,7 +133,8 @@ generalize level t = case t of
                             case varV of
                                 Link t' -> generalize level t'
                                 Unbound i otherLevel -> if otherLevel > level
-                                                            then return (TVar $ createState $ Generic i)
+                                                            then do
+                                                               return (TVar $ createState $ Generic i)
                                                             else return t
                                 _ -> return t
                         _ -> return t
