@@ -39,11 +39,9 @@ occursCheckAdjustLevels tvId tvLevel t = case t of
     TArrow params rtn -> do
         mapM_ (occursCheckAdjustLevels tvId tvLevel) params
         occursCheckAdjustLevels tvId tvLevel rtn
-        return ()
     TApp fn args -> do
         occursCheckAdjustLevels tvId tvLevel fn
         mapM_ (occursCheckAdjustLevels tvId tvLevel) args
-        return ()
     TVar var -> do
         varV <- readIORef var
         case varV of
@@ -52,12 +50,10 @@ occursCheckAdjustLevels tvId tvLevel t = case t of
                 else if otherLevel > tvLevel
                       then do
                         writeIORef var (Unbound otherId tvLevel)
-                        return ()
                       else return ()
             Link t' -> do
                   occursCheckAdjustLevels tvId tvLevel t'
-                  return ()
-            Generic _ -> assert False $ return ()
+            Generic _ -> assert False return ()
 
 canNotUnifyError :: T -> T -> Infer ()
 canNotUnifyError t1 t2 = error $ "cannot unify types " ++ show t1 ++ " and " ++ show t2
@@ -67,11 +63,9 @@ unify' (TConst name1) (TConst name2) | name1 == name2 = return ()
 unify' (TApp fn1 args1) (TApp fn2 args2) = do
     unify fn1 fn2
     zipWithM_ unify args1 args2
-    return ()
 unify' (TArrow params1 rtn1) (TArrow params2 rtn2) = do
     zipWithM_ unify params1 params2
     unify rtn1 rtn2
-    return ()
 unify' t1@(TVar ty1) t2@(TVar ty2) = do
     ty1V <- readIORef ty1
     ty2V <- readIORef ty2
@@ -81,17 +75,14 @@ unify' t1@(TVar ty1) t2@(TVar ty2) = do
                                                 else do
                                                     occursCheckAdjustLevels id1 level1 t2
                                                     writeIORef ty1 $ Link t2
-                                                    return ()
         ((Unbound id1 level1), _) -> do
             occursCheckAdjustLevels id1 level1 t2
             writeIORef ty1 $ Link t2
-            return ()
         ((Link ty1'), _) -> do
             unify ty1' t2
         (_, (Unbound id2 level2)) -> do
             occursCheckAdjustLevels id2 level2 t1
             writeIORef ty2 $ Link t1
-            return ()
         (_, (Link ty2')) -> do
             unify t1 ty2'
         _ -> canNotUnifyError t1 t2
@@ -102,7 +93,6 @@ unify' t1@(TVar ty1) ty2 = do
         Unbound id1 level1 -> do
             occursCheckAdjustLevels id1 level1 ty2
             writeIORef ty1 $ Link ty2
-            return ()
         _ -> canNotUnifyError t1 ty2
 unify' ty1 t2@(TVar ty2) = do
     ty2V <- readIORef ty2
