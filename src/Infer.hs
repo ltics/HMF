@@ -73,7 +73,15 @@ unify' (TArrow params1 rtn1) (TArrow params2 rtn2) = do
 unify' t1@(TVar ty1) t2@(TVar ty2) = case (readState ty1, readState ty2) of
                                         ((Unbound id1 _), (Unbound id2 _)) -> if id1 == id2
                                                                                 then assert False return ()
-                                                                                else canNotUnifyError t1 t2
+                                                                                else do
+                                                                                    writeIORef ty1 $ Link t2
+                                                                                    return ()
+                                        ((Unbound _ _), _) -> do
+                                            writeIORef ty1 $ Link t2
+                                            return ()
+                                        (_, (Unbound _ _)) -> do
+                                            writeIORef ty2 $ Link t1
+                                            return ()
                                         _ -> canNotUnifyError t1 t2
 unify' t1@(TVar ty1) ty2 = case readState ty1 of
                             Link ty1' -> unify ty1' ty2
@@ -175,8 +183,12 @@ infer env level e = case e of
                             infer (M.insert name generalizedTy env) level body
                         ECall fn args -> do
                             fnTy <- infer env level fn
+                            putStrLn $ "fn type -> " ++ (show fnTy)
                             (paramTyList, rtnTy) <- matchFunType (length args) fnTy
+                            putStrLn $ "param type list -> " ++ (show paramTyList)
+                            putStrLn $ "return type -> " ++ (show rtnTy)
                             argTyList <- mapM (\argExpr -> infer env level argExpr) args
+                            putStrLn $ "arg type list -> " ++ (show argTyList)
                             mapM_ (\(paramTy, argTy) -> unify paramTy argTy) $ zip paramTyList argTyList
                             return rtnTy
 

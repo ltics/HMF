@@ -9,8 +9,8 @@ import qualified Data.Map as M
 import qualified Text.PrettyPrint as PP
 import Test.Hspec
 
-runInferSpecCase assumps expr expect = do
-    t <- infer assumps 0 expr
+runInferSpecCase expr expect = do
+    t <- infer assumptions 0 expr
     gt <- generalize (-1) t
     resetId
     (PP.text . show $ gt) `shouldBe` PP.text expect
@@ -39,9 +39,14 @@ spec = do
         (PP.text . show $ a) `shouldBe` PP.text "int"
     describe "inference test" $ do
       it "should infer most general or principal types for given expression" $ do
-        runInferSpecCase M.empty (EFun ["x"] $ EVar "x") "∀a. a → a"
-        runInferSpecCase assumptions (EVar "id") "∀a. a → a"
-        runInferSpecCase assumptions (EVar "one") "int"
+        runInferSpecCase (EVar "id") "∀a. a → a"
+        runInferSpecCase (EVar "one") "int"
         (infer assumptions 0 $ EVar "x") `shouldThrow` errorCall "variable x not found"
-        runInferSpecCase assumptions (ELet "x" (EVar "id") (EVar "x")) "∀a. a → a"
-        runInferSpecCase assumptions (EFun ["x"] $ ELet "y" (EFun ["z"] (EVar "x")) $ EVar "y") "∀a,b. a → b → a"
+        (infer assumptions 0 $ ELet "x" (EVar "x") (EVar "x")) `shouldThrow` errorCall "variable x not found"
+        runInferSpecCase (ELet "x" (EVar "id") $ EVar "x") "∀a. a → a"
+        runInferSpecCase (ELet "x" (EFun ["y"] $ EVar "y") $ EVar "x") "∀a. a → a"
+        runInferSpecCase (EFun ["x"] $ EVar "x") "∀a. a → a"
+        runInferSpecCase (EVar "pair") "∀a,b. (a, b) → pair[a, b]"
+        runInferSpecCase (EFun ["x"] $ ELet "y" (EFun ["z"] $ EVar "z") $ EVar "y") "∀a,b. a → b → b"
+        runInferSpecCase (EFun ["x"] $ ELet "y" (EFun ["z"] $ EVar "x") $ EVar "y") "∀a,b. a → b → a"
+        runInferSpecCase (ELet "f" (EFun ["x"] $ EVar "x") $ ELet "id" (EFun ["y"] $ EVar "y") $ ECall (EVar "eq") [EVar "f", EVar "id"]) "bool"
