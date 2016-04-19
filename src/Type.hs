@@ -5,7 +5,6 @@ module Type where
 import State
 import Data.List (intercalate, sort)
 import Data.IORef
-import qualified GHC.IORef as GI
 import System.IO.Unsafe(unsafePerformIO)
 import Control.DeepSeq
 import qualified Data.Map as M
@@ -29,7 +28,9 @@ instance Eq T where
     TConst name1 == TConst name2 = name1 == name2
     TArrow params1 rtn1 == TArrow params2 rtn2 = params1 == params2 && rtn1 == rtn2
     TApp fn1 args1 == TApp fn2 args2 = fn1 == fn2 && args1 == args2
-    TVar (GI.IORef a) == TVar (GI.IORef b) = a == b
+    TVar var1 == TVar var2 = let a = readState var1 in
+                                let b = readState var2 in
+                                    a == b
     _ == _ = False
 
 instance Show T where

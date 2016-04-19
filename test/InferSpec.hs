@@ -71,4 +71,3 @@ spec = do
         runInferSpecCase (EFun ["x"] $ ELet "y" (ELet "z" (ECall (EVar "x") [EFun ["x"] $ EVar "x"]) $ EVar "z") $ EVar "y") "∀a,b. ((a → a) → b) → b"
         runInferSpecCase (EFun ["x"] $ EFun ["y"] $ ELet "x" (ECall (EVar "x") [EVar "y"]) $ ECall (EVar "x") [EVar "y"]) "∀a,b. (a → a → b) → a → b"
         runInferSpecCase (EFun ["x"] $ ELet "y" (EFun ["z"] $ ECall (EVar "x") [EVar "z"]) $ EVar "y") "∀a,b. (a → b) → a → b"
-
