@@ -74,19 +74,21 @@ prType' t =
             fnV <- prType' fn
             argsV <- mapM prType' args
             return $ fnV ++ "[" ++ intercalate ", " argsV ++ "]"
-         TVar var -> case readState var of
-                           Unbound tvId _ -> return $ "_" ++ show tvId
-                           Link t' -> prType' t'
-                           Generic tvId -> do
-                                m <- readIORef idNameMap
-                                case M.lookup tvId m of
-                                    Just name -> return name
-                                    Nothing -> do
-                                        c <- readIORef count
-                                        let name = nameOfInt c
-                                        modifyIORef idNameMap (\m' -> M.insert tvId name m')
-                                        modifyIORef count (+1)
-                                        return name
+         TVar var -> do
+            varV <- readIORef var
+            case varV of
+                Unbound tvId _ -> return $ "_" ++ show tvId
+                Link t' -> prType' t'
+                Generic tvId -> do
+                     m <- readIORef idNameMap
+                     case M.lookup tvId m of
+                         Just name -> return name
+                         Nothing -> do
+                             c <- readIORef count
+                             let name = nameOfInt c
+                             modifyIORef idNameMap (\m' -> M.insert tvId name m')
+                             modifyIORef count (+1)
+                             return name
 
 prType :: T -> String
 prType t = unsafePerformIO $ do

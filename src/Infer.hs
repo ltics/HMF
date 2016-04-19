@@ -44,18 +44,20 @@ occursCheckAdjustLevels tvId tvLevel t = case t of
         occursCheckAdjustLevels tvId tvLevel fn
         mapM_ (occursCheckAdjustLevels tvId tvLevel) args
         return ()
-    TVar var -> case readState var of
-                      Unbound otherId otherLevel -> if otherId == tvId
-                        then error "recursive types"
-                        else if otherLevel > tvLevel
-                                then do
-                                  writeIORef var (Unbound otherId tvLevel)
-                                  return ()
-                                else return ()
-                      Link t' -> do
-                            occursCheckAdjustLevels tvId tvLevel t'
-                            return ()
-                      Generic _ -> assert False $ return ()
+    TVar var -> do
+        varV <- readIORef var
+        case varV of
+            Unbound otherId otherLevel -> if otherId == tvId
+                then error "recursive types"
+                else if otherLevel > tvLevel
+                      then do
+                        writeIORef var (Unbound otherId tvLevel)
+                        return ()
+                      else return ()
+            Link t' -> do
+                  occursCheckAdjustLevels tvId tvLevel t'
+                  return ()
+            Generic _ -> assert False $ return ()
 
 canNotUnifyError :: T -> T -> Infer ()
 canNotUnifyError t1 t2 = error $ "cannot unify types " ++ show t1 ++ " and " ++ show t2
@@ -70,32 +72,39 @@ unify' (TArrow params1 rtn1) (TArrow params2 rtn2) = do
     zipWithM_ unify params1 params2
     unify rtn1 rtn2
     return ()
-unify' t1@(TVar ty1) t2@(TVar ty2) = case (readState ty1, readState ty2) of
-                                        ((Unbound id1 _), (Unbound id2 _)) -> if id1 == id2
-                                                                                then assert False return ()
-                                                                                else do
-                                                                                    writeIORef ty1 $ Link t2
-                                                                                    return ()
-                                        ((Unbound _ _), _) -> do
-                                            writeIORef ty1 $ Link t2
-                                            return ()
-                                        (_, (Unbound _ _)) -> do
-                                            writeIORef ty2 $ Link t1
-                                            return ()
-                                        _ -> canNotUnifyError t1 t2
-unify' t1@(TVar ty1) ty2 = case readState ty1 of
-                            Link ty1' -> unify ty1' ty2
-                            Unbound id1 level1 -> do
-                                occursCheckAdjustLevels id1 level1 ty2
-                                writeIORef ty1 $ Link ty2
-                                return ()
-                            _ -> canNotUnifyError t1 ty2
-unify' ty1 t2@(TVar ty2) = case readState ty2 of
-                            Link ty2' -> unify ty1 ty2'
-                            Unbound id2 level2 -> do
-                                occursCheckAdjustLevels id2 level2 ty1
-                                writeIORef ty2 $ Link ty1
-                            _ -> canNotUnifyError ty1 t2
+unify' t1@(TVar ty1) t2@(TVar ty2) = do
+    ty1V <- readIORef ty1
+    ty2V <- readIORef ty2
+    case (ty1V, ty2V) of
+        ((Unbound id1 _), (Unbound id2 _)) -> if id1 == id2
+                                                then assert False return ()
+                                                else do
+                                                    writeIORef ty1 $ Link t2
+                                                    return ()
+        ((Unbound _ _), _) -> do
+            writeIORef ty1 $ Link t2
+            return ()
+        (_, (Unbound _ _)) -> do
+            writeIORef ty2 $ Link t1
+            return ()
+        _ -> canNotUnifyError t1 t2
+unify' t1@(TVar ty1) ty2 = do
+    ty1V <- readIORef ty1
+    case ty1V of
+        Link ty1' -> unify ty1' ty2
+        Unbound id1 level1 -> do
+            occursCheckAdjustLevels id1 level1 ty2
+            writeIORef ty1 $ Link ty2
+            return ()
+        _ -> canNotUnifyError t1 ty2
+unify' ty1 t2@(TVar ty2) = do
+    ty2V <- readIORef ty2
+    case ty2V of
+        Link ty2' -> unify ty1 ty2'
+        Unbound id2 level2 -> do
+            occursCheckAdjustLevels id2 level2 ty1
+            writeIORef ty2 $ Link ty1
+        _ -> canNotUnifyError ty1 t2
 unify' ty1 ty2 = canNotUnifyError ty1 ty2
 
 unify :: T -> T -> Infer ()
@@ -112,12 +121,14 @@ generalize level t = case t of
                             fnTy <- generalize level fn
                             argTyList <- mapM (generalize level) args
                             return $ TApp fnTy argTyList
-                        TVar var -> case readState var of
-                                    Link t' -> generalize level t'
-                                    Unbound i otherLevel -> if otherLevel > level
-                                                                then return (TVar $ createState $ Generic i)
-                                                                else return t
-                                    _ -> return t
+                        TVar var -> do
+                            varV <- readIORef var
+                            case varV of
+                                Link t' -> generalize level t'
+                                Unbound i otherLevel -> if otherLevel > level
+                                                            then return (TVar $ createState $ Generic i)
+                                                            else return t
+                                _ -> return t
                         _ -> return t
 
 instantiate :: Rank -> T -> Infer T
