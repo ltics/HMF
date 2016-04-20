@@ -6,7 +6,6 @@ import State
 import Data.List (intercalate, sort)
 import Data.IORef
 import System.IO.Unsafe(unsafePerformIO)
-import Control.DeepSeq
 import qualified Data.Map as M
 import qualified Text.PrettyPrint as PP
 
@@ -55,7 +54,7 @@ countReset = writeIORef count 0
 prType' :: T -> Infer Name
 prType' t =
     case t of
-         TConst name -> do return name
+         TConst name -> return name
          TArrow params rtn -> case params of
                                     [param] -> case param of
                                                    (TArrow _ _) -> do
@@ -93,7 +92,7 @@ prType' t =
 prType :: T -> String
 prType t = unsafePerformIO $ do
     lit <- prType' t
-    c <- lit `deepseq` readIORef count
+    c <- readIORef count
     idNames <- readIORef idNameMap
     let lit' = if c > 0
                then "∀" ++ intercalate "," (sort $ M.elems idNames) ++ ". " ++ lit

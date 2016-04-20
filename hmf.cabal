@@ -16,11 +16,14 @@ library
                      , Ranked.Ast
                      , Ranked.Type
                      , Ranked.Infer
+                     , FCP.Ast
+                     , FCP.Type
                      , State
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , deepseq
                      , pretty
+                     , monad-loops
   default-language:    Haskell2010
 
 executable hmf-exe

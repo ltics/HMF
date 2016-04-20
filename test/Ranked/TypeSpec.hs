@@ -1,9 +1,8 @@
 module Ranked.TypeSpec where
 
 import Ranked.Type
-import Ranked.Infer
+import Ranked.Infer (newGenVar, resetId)
 import State
-import Data.IORef
 import qualified Text.PrettyPrint as PP
 import Test.Hspec
 

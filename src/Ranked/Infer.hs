@@ -133,7 +133,7 @@ instantiate :: Rank -> T -> Infer T
 instantiate level t = do
     idVarMap <- newIORef (M.empty :: (M.Map Int T))
     let f ty = case ty of
-                TConst _ -> do return ty
+                TConst _ -> return ty
                 TArrow params rtn -> do
                     paramsV <- mapM f params
                     rtnV <- f rtn
