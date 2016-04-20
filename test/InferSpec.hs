@@ -83,4 +83,5 @@ spec = do
         runInferSpecCase (ELet "apply-curry" (EFun ["f"] $ EFun ["x"] $ ECall (EVar "f") [EVar "x"]) $ EVar "apply-curry") "∀a,b. (a → b) → a → b"
         runInferSpecCase (ECall (EVar "apply") [EVar "succ", EVar "one"]) "int"
         runInferSpecCase (ECall (ECall (EVar "apply-curry") [EVar "succ"]) [EVar "one"]) "int"
+        runInferSpecCase (ECall (EVar "single") [EVar "id"]) "∀a. list[a → a]"
 

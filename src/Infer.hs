@@ -233,6 +233,7 @@ assumptions = M.fromList
      ("cons-curry", TArrow [tvarA] $ TArrow [polyList] polyList),
      ("map", TArrow [TArrow [tvarA] tvarB, polyList] polyList'),
      ("map-curry", TArrow [TArrow [tvarA] tvarB] $ TArrow [polyList] polyList'),
+     ("single", TArrow [tvarA] polyList),
      ("zero", tcInt),
      ("one", tcInt),
      ("succ", TArrow [tcInt] tcInt),
