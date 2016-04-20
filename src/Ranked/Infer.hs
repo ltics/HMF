@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -Wall #-}
 
-module Infer where
+module Ranked.Infer where
 
-import Ast
-import Type
+import Ranked.Ast
+import Ranked.Type
 import State
 import qualified Data.Map as M
 import Data.IORef
@@ -176,7 +176,7 @@ matchFunType numParams t = case t of
                                     _ -> error "expected a function"
                             _ -> error "expected a function"
 
-infer :: M.Map Ast.Name T -> Rank -> Expr -> Infer T
+infer :: M.Map Ranked.Ast.Name T -> Rank -> Expr -> Infer T
 infer env level e = case e of
                         EVar name -> case M.lookup name env of
                                         Just t -> instantiate level t
@@ -224,7 +224,7 @@ polyList' = TApp tcList [tvarB]
 polyPair :: T
 polyPair = TApp tcPair [tvarA, tvarB]
 
-assumptions :: M.Map Ast.Name T
+assumptions :: M.Map Ranked.Ast.Name T
 assumptions = M.fromList
     [("head", TArrow [polyList] tvarA),
      ("tail", TArrow [polyList] polyList),

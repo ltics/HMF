@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 
-module Type where
+module Ranked.Type where
 
 import State
 import Data.List (intercalate, sort)

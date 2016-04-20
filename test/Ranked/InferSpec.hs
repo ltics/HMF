@@ -1,9 +1,8 @@
-module InferSpec where
+module Ranked.InferSpec where
 
-import Ast
-import Type
-import Infer
-import State
+import Ranked.Ast
+import Ranked.Type
+import Ranked.Infer
 import Data.IORef
 import qualified Data.Map as M
 import qualified Text.PrettyPrint as PP

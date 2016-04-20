@@ -13,10 +13,10 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-                     , Ast
-                     , Type
+                     , Ranked.Ast
+                     , Ranked.Type
+                     , Ranked.Infer
                      , State
-                     , Infer
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , deepseq
@@ -33,8 +33,8 @@ executable hmf-exe
 
 test-suite hmf-test
   type:                exitcode-stdio-1.0
-  other-modules:       TypeSpec
-                     , InferSpec
+  other-modules:       Ranked.TypeSpec
+                     , Ranked.InferSpec
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base

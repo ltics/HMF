@@ -1,8 +1,8 @@
-module TypeSpec where
+module Ranked.TypeSpec where
 
-import Type
+import Ranked.Type
+import Ranked.Infer
 import State
-import Infer
 import Data.IORef
 import qualified Text.PrettyPrint as PP
 import Test.Hspec

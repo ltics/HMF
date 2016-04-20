@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 
-module Ast where
+module Ranked.Ast where
 
 import Data.List (intercalate)
 

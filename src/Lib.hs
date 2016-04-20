@@ -2,10 +2,10 @@ module Lib
     ( someFunc
     ) where
 
-import Ast
-import Type
-import State
-import Infer
+import Ranked.Ast
+import Ranked.Type
+import Ranked.Infer
+import State (Infer)
 import qualified Text.PrettyPrint as PP
 
 uni :: Infer T
