@@ -3,6 +3,7 @@ module Ranked.InferSpec where
 import Ranked.Ast
 import Ranked.Type
 import Ranked.Infer
+import State (resetId)
 import Data.IORef
 import qualified Data.Map as M
 import qualified Text.PrettyPrint as PP
