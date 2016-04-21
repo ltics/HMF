@@ -25,7 +25,7 @@ data TV = Unbound Id Rank
         | Bound Id
         | Link T
         | Generic Id
-        deriving (Eq)
+        deriving (Eq, Ord)
 
 unlink :: T -> Infer T
 unlink t = case t of
@@ -60,10 +60,21 @@ instance Eq T where
     TConst name1 == TConst name2 = name1 == name2
     TArrow params1 rtn1 == TArrow params2 rtn2 = params1 == params2 && rtn1 == rtn2
     TApp fn1 args1 == TApp fn2 args2 = fn1 == fn2 && args1 == args2
+    TForall ids1 t1 == TForall ids2 t2 = ids1 == ids2 && t1 == t2
     TVar var1 == TVar var2 = let a = readState var1 in
                                 let b = readState var2 in
                                     a == b
     _ == _ = False
+
+instance Ord T where
+    TConst name1 <= TConst name2 = name1 <= name2
+    TArrow params1 rtn1 <= TArrow params2 rtn2 = params1 <= params2 && rtn1 <= rtn2
+    TApp fn1 args1 <= TApp fn2 args2 = fn1 <= fn2 && args1 <= args2
+    TForall ids1 t1 <= TForall ids2 t2 = ids1 <= ids2 && t1 <= t2
+    TVar var1 <= TVar var2 = let a = readState var1 in
+                                let b = readState var2 in
+                                    a <= b
+    _ <= _ = False
 
 instance Show T where
     showsPrec _ x = shows $ PP.text $ stringOfType x

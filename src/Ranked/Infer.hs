@@ -35,8 +35,7 @@ occursCheckAdjustLevels tvId tvLevel t = case t of
             Unbound otherId otherLevel -> if otherId == tvId
                 then error "recursive types"
                 else if otherLevel > tvLevel
-                      then do
-                        writeIORef var (Unbound otherId tvLevel)
+                      then writeIORef var (Unbound otherId tvLevel)
                       else return ()
             Link t' -> do
                   occursCheckAdjustLevels tvId tvLevel t'
@@ -118,7 +117,7 @@ generalize level t = case t of
 
 instantiate :: Rank -> T -> Infer T
 instantiate level t = do
-    idVarMap <- newIORef (M.empty :: (M.Map Int T))
+    idVarMap <- newIORef M.empty
     let f ty = case ty of
                 TConst _ -> return ty
                 TArrow params rtn -> do

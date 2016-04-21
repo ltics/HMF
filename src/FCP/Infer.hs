@@ -55,3 +55,50 @@ occursCheckAdjustLevels tvId tvLevel t = case t of
                   occursCheckAdjustLevels tvId tvLevel t'
             _ -> return ()
 
+substitudeBoundVars' :: IdType -> T -> Infer T
+substitudeBoundVars' idTy t = case t of
+                                TConst _ -> return t
+                                TApp fn args -> do
+                                    fnT <- substitudeBoundVars' idTy fn
+                                    argsT <- mapM (substitudeBoundVars' idTy) args
+                                    return $ TApp fnT argsT
+                                TArrow params rtn -> do
+                                    paramsT <- mapM (substitudeBoundVars' idTy) params
+                                    rtnT <- substitudeBoundVars' idTy rtn
+                                    return $ TArrow paramsT rtnT
+                                TForall varIds ty -> do
+                                    tyT <- substitudeBoundVars' (idTypeMapRemoveAll idTy varIds) ty
+                                    return $ TForall varIds tyT
+                                TVar var -> do
+                                    varV <- readIORef var
+                                    case varV of
+                                        Link ty -> substitudeBoundVars' idTy ty
+                                        Bound i -> case M.lookup i idTy of
+                                                    Just ty -> return ty
+                                                    Nothing -> return t
+                                        _ -> return t
+
+substitudeBoundVars :: [Id] -> [T] -> T -> Infer T
+substitudeBoundVars varIds types t = substitudeBoundVars' (idTypeMapFrom2Lists varIds types) t
+
+freeGenericVars :: T -> Infer (S.Set T)
+freeGenericVars t = do
+    freeVarSet <- newIORef S.empty
+    let f ty = case ty of
+                TConst _ -> return ()
+                TApp fn args -> do
+                    f fn
+                    mapM_ f args
+                TArrow params rtn -> do
+                    mapM_ f params
+                    f rtn
+                TForall _ ty' -> f ty'
+                TVar var -> do
+                    varV <- readIORef var
+                    case varV of
+                        Link ty' -> f ty'
+                        Generic _ -> modifyIORef freeVarSet (\s -> S.insert ty s)
+                        _ -> return ()
+    f t
+    freeVarSetV <- readIORef freeVarSet
+    return freeVarSetV
