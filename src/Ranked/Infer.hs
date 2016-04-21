@@ -32,13 +32,10 @@ occursCheckAdjustLevels tvId tvLevel t = case t of
     TVar var -> do
         varV <- readIORef var
         case varV of
-            Unbound otherId otherLevel -> if otherId == tvId
-                then error "recursive types"
-                else if otherLevel > tvLevel
-                      then writeIORef var (Unbound otherId tvLevel)
-                      else return ()
-            Link t' -> do
-                  occursCheckAdjustLevels tvId tvLevel t'
+            Unbound otherId otherLevel | otherId == tvId -> error "recursive types"
+                                       | otherLevel > tvLevel -> writeIORef var $ Unbound otherId tvLevel
+                                       | otherwise -> return ()
+            Link t' -> occursCheckAdjustLevels tvId tvLevel t'
             Generic _ -> assert False return ()
 
 canNotUnifyError :: T -> T -> Infer ()
@@ -56,21 +53,19 @@ unify' t1@(TVar ty1) t2@(TVar ty2) = do
     ty1V <- readIORef ty1
     ty2V <- readIORef ty2
     case (ty1V, ty2V) of
-        ((Unbound id1 level1), (Unbound id2 _)) -> if id1 == id2
+        (Unbound id1 level1, Unbound id2 _) -> if id1 == id2
                                                 then assert False return ()
                                                 else do
                                                     occursCheckAdjustLevels id1 level1 t2
                                                     writeIORef ty1 $ Link t2
-        ((Unbound id1 level1), _) -> do
+        (Unbound id1 level1, _) -> do
             occursCheckAdjustLevels id1 level1 t2
             writeIORef ty1 $ Link t2
-        ((Link ty1'), _) -> do
-            unify ty1' t2
-        (_, (Unbound id2 level2)) -> do
+        (Link ty1', _) -> unify ty1' t2
+        (_, Unbound id2 level2) -> do
             occursCheckAdjustLevels id2 level2 t1
             writeIORef ty2 $ Link t1
-        (_, (Link ty2')) -> do
-            unify t1 ty2'
+        (_, Link ty2') -> unify t1 ty2'
         _ -> canNotUnifyError t1 t2
 unify' t1@(TVar ty1) ty2 = do
     ty1V <- readIORef ty1
@@ -91,8 +86,7 @@ unify' ty1 t2@(TVar ty2) = do
 unify' ty1 ty2 = canNotUnifyError ty1 ty2
 
 unify :: T -> T -> Infer ()
-unify ty1 ty2 = do
-    if ty1 == ty2 then return () else unify' ty1 ty2
+unify ty1 ty2 = unless (ty1 == ty2) $ unify' ty1 ty2
 
 generalize :: Rank -> T -> Infer T
 generalize level t = case t of
@@ -109,8 +103,7 @@ generalize level t = case t of
                             case varV of
                                 Link t' -> generalize level t'
                                 Unbound i otherLevel -> if otherLevel > level
-                                                            then do
-                                                               return (TVar $ createState $ Generic i)
+                                                            then return (TVar $ createState $ Generic i)
                                                             else return t
                                 _ -> return t
                         _ -> return t
@@ -139,14 +132,13 @@ instantiate level t = do
                                 Just var' -> return var'
                                 Nothing -> do
                                    var' <- newVar level
-                                   modifyIORef idVarMap (\m' -> M.insert i var' m')
+                                   modifyIORef idVarMap $ M.insert i var'
                                    return var'
-    inst <- f t
-    return inst
+    f t
 
 matchFunType :: Int -> T -> Infer ([T], T)
 matchFunType numParams t = case t of
-                            TArrow params rtn -> do
+                            TArrow params rtn ->
                                 if length params /= numParams
                                 then error "unexpected number of arguments"
                                 else return (params, rtn)
@@ -179,8 +171,8 @@ infer env level e = case e of
                         ECall fn args -> do
                             fnTy <- infer env level fn
                             (paramTyList, rtnTy) <- matchFunType (length args) fnTy
-                            argTyList <- mapM (\argExpr -> infer env level argExpr) args
-                            mapM_ (\(paramTy, argTy) -> unify paramTy argTy) $ zip paramTyList argTyList
+                            argTyList <- mapM (infer env level) args
+                            mapM_ (uncurry unify) $ zip paramTyList argTyList
                             return rtnTy
 
 tcInt :: T

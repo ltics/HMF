@@ -85,7 +85,7 @@ prType' t =
                          Nothing -> do
                              c <- readIORef count
                              let name = nameOfInt c
-                             modifyIORef idNameMap (\m' -> M.insert tvId name m')
+                             modifyIORef idNameMap $ M.insert tvId name
                              modifyIORef count (+1)
                              return name
 

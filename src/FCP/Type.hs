@@ -93,11 +93,11 @@ extendIdNameMap idNameMap varIds =
 
 complex :: IdName -> T -> Infer String
 complex idNameMap (TArrow params rtn) = do
-    paramsStr <- (case params of
+    paramsStr <- case params of
                     [param] -> simple idNameMap param
                     _ -> do
                         paramsV <- mapM (complex idNameMap) params
-                        return $ "(" ++ intercalate ", " paramsV ++ ")")
+                        return $ "(" ++ intercalate ", " paramsV ++ ")"
     rtnStr <- complex idNameMap rtn
     return $ paramsStr ++ " → " ++ rtnStr
 complex idNameMap (TForall varIds t) = do
@@ -121,18 +121,18 @@ simple idNameMap (TApp fn args) = do
 simple idNameMap (TVar var) = do
     varV <- readIORef var
     case varV of
-        Unbound i _ -> return $ "@unknown" ++ (show i)
+        Unbound i _ -> return $ "@unknown" ++ show i
         Bound i -> case M.lookup i idNameMap of
                     Just name -> return name
                     Nothing -> error "can not find bound type variable"
-        Generic i -> return $ "@generic" ++ (show i)
+        Generic i -> return $ "@generic" ++ show i
         Link t -> simple idNameMap t
 simple idNameMap t = do
     tStr <- complex idNameMap t
     return $ "(" ++ tStr ++ ")"
 
 stringOfTypeWithUnboundTypeVars :: IdName -> T -> Infer String
-stringOfTypeWithUnboundTypeVars idNameMap t = complex idNameMap t
+stringOfTypeWithUnboundTypeVars = complex
 
 stringOfType :: T -> String
 stringOfType t = unsafePerformIO $ stringOfTypeWithUnboundTypeVars M.empty t

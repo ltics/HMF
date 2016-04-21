@@ -2,11 +2,9 @@ module Lib
     ( someFunc
     ) where
 
-import Ranked.Ast
 import Ranked.Type
 import Ranked.Infer
 import State (Infer)
-import qualified Text.PrettyPrint as PP
 
 uni :: Infer T
 uni = do
@@ -19,4 +17,4 @@ uni = do
 someFunc :: IO ()
 someFunc = do
     t <- uni
-    putStrLn $ show t
+    print t

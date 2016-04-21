@@ -20,13 +20,13 @@ spec = do
     describe "type equality test" $ do
       it "eq" $ do
         (TVar $ createState $ Generic 3) == (TVar $ createState $ Generic 3) `shouldBe` True
-        [(TVar $ createState $ Generic 3)] == [(TVar $ createState $ Generic 3)] `shouldBe` True
-        (TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] $ TVar (createState (Generic 5)))
-            == (TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] $ TVar (createState (Generic 5)))
+        [TVar $ createState $ Generic 3] == [TVar $ createState $ Generic 3] `shouldBe` True
+        TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] (TVar (createState (Generic 5)))
+            == TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] (TVar (createState (Generic 5)))
             `shouldBe` True
       it "not eq" $ do
         (TVar $ createState $ Generic 3) == (TVar $ createState $ Generic 5) `shouldBe` False
-        [(TVar $ createState $ Generic 3)] == [(TVar $ createState $ Generic 5)] `shouldBe` False
-        (TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] $ TVar (createState (Generic 5)))
-            == (TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] $ TVar (createState (Generic 6)))
+        [TVar $ createState $ Generic 3] == [TVar $ createState $ Generic 5] `shouldBe` False
+        TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] (TVar (createState (Generic 5)))
+            == TArrow [TVar (createState (Generic 3)), TVar (createState (Generic 4))] (TVar (createState (Generic 6)))
             `shouldBe` False

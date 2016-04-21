@@ -47,14 +47,10 @@ occursCheckAdjustLevels tvId tvLevel t = case t of
     TVar var -> do
         varV <- readIORef var
         case varV of
-            Unbound otherId otherLevel -> if otherId == tvId
-                then error "recursive types"
-                else if otherLevel > tvLevel
-                      then do
-                        writeIORef var (Unbound otherId tvLevel)
-                      else return ()
-            Link t' -> do
-                  occursCheckAdjustLevels tvId tvLevel t'
+            Unbound otherId otherLevel | otherId == tvId -> error "recursive types"
+                                       | otherLevel > tvLevel -> writeIORef var $ Unbound otherId tvLevel
+                                       | otherwise -> return ()
+            Link t' -> occursCheckAdjustLevels tvId tvLevel t'
             _ -> return ()
 
 substitudeBoundVars' :: IdType -> T -> Infer T
@@ -99,11 +95,10 @@ freeGenericVars t = do
                     varV <- readIORef var
                     case varV of
                         Link ty' -> f ty'
-                        Generic _ -> modifyIORef freeVarSet (\s -> S.insert ty s)
+                        Generic _ -> modifyIORef freeVarSet $ S.insert ty
                         _ -> return ()
     f t
-    freeVarSetV <- readIORef freeVarSet
-    return freeVarSetV
+    readIORef freeVarSet
 
 escapeCheck :: [T] -> T -> T -> Infer Bool
 escapeCheck genericVars t1 t2 = do

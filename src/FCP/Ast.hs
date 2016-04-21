@@ -44,7 +44,7 @@ complex (EFun params bodyExpr) = do
                                                 return $ "(" ++ paramName ++ " : " ++ annV ++ ")"
                                             Nothing -> return paramName)
                     params
-    let paramsStr = intercalate " " paramsV
+    let paramsStr = unwords paramsV
     rtnStr <- complex bodyExpr
     return $ "ƒ " ++ paramsStr ++ " → " ++ rtnStr
 complex (ELet varName valueExpr bodyExpr) = do

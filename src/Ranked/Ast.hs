@@ -13,6 +13,6 @@ data Expr = EVar Name
 
 instance Show Expr where
     show (EVar name) = name
-    show (EFun params body) = "ƒ " ++ intercalate " " params ++ " → " ++ show body
+    show (EFun params body) = "ƒ " ++ unwords params ++ " → " ++ show body
     show (ECall fn args) = show fn ++ "(" ++ intercalate ", " (map show args) ++ ")"
     show (ELet name value body) = "let " ++ name ++ " = " ++ show value ++ " in " ++ show body
