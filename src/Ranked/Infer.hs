@@ -147,7 +147,7 @@ matchFunType numParams t = case t of
                                 case varV of
                                     Link ty -> matchFunType numParams ty
                                     Unbound _ level -> do
-                                        paramTyList <- mapM (\_ -> newVar level) [1..numParams]
+                                        paramTyList <- mapM (const $ newVar level) [1..numParams]
                                         rtnTy <- newVar level
                                         writeIORef var $ Link $ TArrow paramTyList rtnTy
                                         return (paramTyList, rtnTy)
@@ -160,7 +160,7 @@ infer env level e = case e of
                                         Just t -> instantiate level t
                                         Nothing -> error $ "variable " ++ name ++ " not found"
                         EFun params body -> do
-                            paramTyList <- mapM (\_ -> newVar level) params
+                            paramTyList <- mapM (const $ newVar level) params
                             let fnEnv = foldl (\env' (n, t) -> M.insert n t env') env $ zip params paramTyList
                             rtnTy <- infer fnEnv level body
                             return $ TArrow paramTyList rtnTy

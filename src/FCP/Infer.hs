@@ -2,6 +2,7 @@
 
 module FCP.Infer where
 
+import FCP.Ast (TAnn(..))
 import FCP.Type
 import State
 import Data.IORef
@@ -27,6 +28,12 @@ newBoundVar = do
 
 type IdType = M.Map Id T
 type NameType = M.Map Name T
+
+canNotUnifyError :: T -> T -> Infer ()
+canNotUnifyError t1 t2 = error $ "cannot unify types " ++ show t1 ++ " and " ++ show t2
+
+notInstanceError :: T -> T -> Infer ()
+notInstanceError t1 t2 = error $ "type " ++ show t1 ++ " is not an instance of " ++ show t2
 
 idTypeMapFrom2Lists :: [Id] -> [T] -> IdType
 idTypeMapFrom2Lists ids tys = foldl (\m (i, t) -> M.insert i t m) M.empty $ zip ids tys
@@ -106,9 +113,6 @@ escapeCheck genericVars t1 t2 = do
     freeVars2 <- freeGenericVars t2
     return $ any (\var -> S.member var freeVars1 || S.member var freeVars2) genericVars
 
-canNotUnifyError :: T -> T -> Infer ()
-canNotUnifyError t1 t2 = error $ "cannot unify types " ++ show t1 ++ " and " ++ show t2
-
 unify' :: T -> T -> Infer ()
 unify' (TConst name1) (TConst name2) | name1 == name2 = return ()
 unify' (TApp fn1 args1) (TApp fn2 args2) = do
@@ -167,3 +171,87 @@ unify' ty1 ty2 = canNotUnifyError ty1 ty2
 
 unify :: T -> T -> Infer ()
 unify ty1 ty2 = unless (ty1 == ty2) $ unify' ty1 ty2
+
+substituteWithNewVars :: Rank -> [Id] -> T -> Infer ([T], T)
+substituteWithNewVars level varIds t = do
+    varTs <- mapM (const $ newVar level) varIds
+    tyT <- substitudeBoundVars (reverse varIds) varTs t
+    return (varTs, tyT)
+
+instantiateTypeAnn :: Rank -> TAnn -> Infer ([T], T)
+instantiateTypeAnn _ (TAnn [] t) = return ([], t)
+instantiateTypeAnn level (TAnn varIds t) = substituteWithNewVars level varIds t
+
+
+instantiate :: Rank -> T -> Infer T
+instantiate level (TForall varIds t) = do
+    (_, instantiatedT) <- substituteWithNewVars level varIds t
+    return instantiatedT
+instantiate level t@(TVar var) = do
+    varV <- readIORef var
+    case varV of
+        Link t' -> instantiate level t'
+        _ -> return t
+instantiate _ t = return t
+
+subsume :: Rank -> T -> T -> Infer ()
+subsume level t1 t2 = do
+    instantiatedT2 <- instantiate level t2
+    unlinkedT1 <- unlink t1
+    case unlinkedT1 of
+        TForall varIds1 t1' -> do
+            genericVars <- mapM (const newGenVar) varIds1
+            let genericVars' = reverse genericVars
+            genericT1 <- substitudeBoundVars varIds1 genericVars' t1'
+            unify genericT1 instantiatedT2
+            isEscape <- escapeCheck genericVars' unlinkedT1 t2
+            when isEscape $ notInstanceError t2 unlinkedT1
+        _ -> unify unlinkedT1 instantiatedT2
+
+
+generalize :: Rank -> T -> Infer T
+generalize level t = do
+    varIdsRevRef <- newIORef []
+    let f ty = case ty of
+                TConst _ -> return ()
+                TForall _ ty' -> f ty'
+                TArrow params rtn -> do
+                    mapM_ f params
+                    f rtn
+                TApp fn args -> do
+                    f fn
+                    mapM_ f args
+                TVar var -> do
+                    varV <- readIORef var
+                    case varV of
+                        Link ty' -> f ty'
+                        Generic _ -> assert False return ()
+                        Bound _ -> return ()
+                        Unbound otherId otherLevel | otherLevel > level -> do
+                                                                        writeIORef var $ Bound otherId
+                                                                        varIdsRevRefV <- readIORef varIdsRevRef
+                                                                        when (otherId `elem` varIdsRevRefV) $ writeIORef varIdsRevRef (otherId : varIdsRevRefV)
+                                                   | otherwise -> return ()
+    f t
+    varIdsRevRefV <- readIORef varIdsRevRef
+    case varIdsRevRefV of
+        [] -> return t
+        varIdRevs -> return $ TForall (reverse varIdRevs) t
+
+matchFunType :: Int -> T -> Infer ([T], T)
+matchFunType numParams t = case t of
+                            TArrow params rtn ->
+                                if length params /= numParams
+                                then error "unexpected number of arguments"
+                                else return (params, rtn)
+                            TVar var -> do
+                                varV <- readIORef var
+                                case varV of
+                                    Link ty -> matchFunType numParams ty
+                                    Unbound _ level -> do
+                                        paramTyList <- mapM (const $ newVar level) [1..numParams]
+                                        rtnTy <- newVar level
+                                        writeIORef var $ Link $ TArrow paramTyList rtnTy
+                                        return (paramTyList, rtnTy)
+                                    _ -> error "expected a function"
+                            _ -> error "expected a function"
