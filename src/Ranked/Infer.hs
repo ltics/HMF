@@ -20,6 +20,8 @@ newGenVar = do
     next <- nextId
     return $ TVar $ createState $ Generic next
 
+type Env = M.Map Ranked.Ast.Name T
+
 occursCheckAdjustLevels :: Int -> Int -> T -> Infer ()
 occursCheckAdjustLevels tvId tvLevel t = case t of
     TConst _ -> return ()
@@ -154,7 +156,7 @@ matchFunType numParams t = case t of
                                     _ -> error "expected a function"
                             _ -> error "expected a function"
 
-infer :: M.Map Ranked.Ast.Name T -> Rank -> Expr -> Infer T
+infer :: Env -> Rank -> Expr -> Infer T
 infer env level e = case e of
                         EVar name -> case M.lookup name env of
                                         Just t -> instantiate level t
@@ -202,7 +204,7 @@ polyList' = TApp tcList [tvarB]
 polyPair :: T
 polyPair = TApp tcPair [tvarA, tvarB]
 
-assumptions :: M.Map Ranked.Ast.Name T
+assumptions :: Env
 assumptions = M.fromList
     [("head", TArrow [polyList] tvarA),
      ("tail", TArrow [polyList] polyList),

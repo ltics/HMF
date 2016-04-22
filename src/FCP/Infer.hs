@@ -2,9 +2,11 @@
 
 module FCP.Infer where
 
-import FCP.Ast (TAnn(..))
-import FCP.Type
+import FCP.Ast
+import FCP.Type hiding (Name)
 import State
+import Data.Function (on)
+import Data.List (sortBy)
 import Data.IORef
 import Control.Monad
 import Control.Exception
@@ -27,7 +29,7 @@ newBoundVar = do
     return (next, TVar $ createState $ Bound next)
 
 type IdType = M.Map Id T
-type NameType = M.Map Name T
+type Env = M.Map Name T
 
 canNotUnifyError :: T -> T -> Infer ()
 canNotUnifyError t1 t2 = error $ "cannot unify types " ++ show t1 ++ " and " ++ show t2
@@ -255,3 +257,59 @@ matchFunType numParams t = case t of
                                         return (paramTyList, rtnTy)
                                     _ -> error "expected a function"
                             _ -> error "expected a function"
+
+infer :: Env -> Rank -> Expr -> Infer T
+infer env level e = case e of
+                        EVar name -> case M.lookup name env of
+                                        Just t -> return t
+                                        Nothing -> error $ "variable " ++ name ++ " not found"
+                        {-EFun params body -> do
+                            fnEnvRef <- newIORef env
+                            varListRef <- newIORef []
+                            
+                            paramTyList <- mapM (const $ newVar level) params
+                            let fnEnv = foldl (\env' (n, t) -> M.insert n t env') env $ zip params paramTyList
+                            rtnTy <- infer fnEnv level body
+                            return $ TArrow paramTyList rtnTy-}
+                        ELet name value body -> do
+                            valueT <- infer env (level + 1) value
+                            infer (M.insert name valueT env) level body
+                        ECall fn args -> do
+                            fnTy <- infer env (level + 1) fn
+                            fnTy' <- instantiate (level + 1) fnTy
+                            (paramTs, rtnT) <- matchFunType (length args) fnTy'
+                            inferArgs env (level + 1) paramTs args
+                            rtnT' <- instantiate (level + 1) rtnT
+                            generalize level rtnT'
+                        EAnn expr ann -> do
+                            (_, annT) <- instantiateTypeAnn level ann
+                            exprT <- infer env level expr
+                            subsume level annT exprT
+                            return annT
+
+getOrdering :: T -> Infer Int
+getOrdering ty = do
+  unlinkedT <- unlink ty
+  case unlinkedT of
+    TVar var -> do
+        varV <- readIORef var
+        case varV of
+            Unbound _ _ -> return 1
+            _ -> return 0
+    _ -> return 0
+
+inferArgs :: Env -> Rank ->  [T] -> [Expr] -> Infer ()
+inferArgs env level paramTs args = do
+    let pairs = zip paramTs args
+    pairsWithOrd <- mapM (\(p, a) -> do
+                             ord <- getOrdering p
+                             return ((p, a), ord))
+                    pairs
+    let sortedPairs = map fst $ sortBy (compare `on` snd) pairsWithOrd
+    mapM_ (\(paramT, argE) -> do
+              argT <- infer env level argE
+              if isAnnotated argE
+              then unify paramT argT
+              else subsume level paramT argT)
+          sortedPairs
+
