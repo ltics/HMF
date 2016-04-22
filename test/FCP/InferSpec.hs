@@ -11,9 +11,15 @@ import Test.Hspec
 runInferSpecCase :: Expr -> String -> IO ()
 runInferSpecCase expr expect = do
     t <- infer assumptions 0 expr
-    gt <- generalize (-1) t
+    -- no need to generalize here
+    -- gt <- generalize (-1) t
     resetId
-    (PP.text . show $ gt) `shouldBe` PP.text expect
+    (PP.text . show $ t) `shouldBe` PP.text expect
+
+failInferSpecCase :: Expr -> String -> IO ()
+failInferSpecCase expr error = do
+    infer assumptions 0 expr `shouldThrow` errorCall error
+    resetId
 
 spec :: Spec
 spec = do
@@ -37,12 +43,12 @@ spec = do
         resetId
         unify (TConst "int") a
         (PP.text . show $ a) `shouldBe` PP.text "int"
-    describe "inference test" $
+    describe "classic inference test" $
       it "should infer most general or principal types for given expression" $ do
         runInferSpecCase (EVar "id") "∀a. a → a"
         runInferSpecCase (EVar "one") "int"
-        infer assumptions 0 (EVar "x") `shouldThrow` errorCall "variable x not found"
-        infer assumptions 0 (ELet "x" (EVar "x") (EVar "x")) `shouldThrow` errorCall "variable x not found"
+        failInferSpecCase (EVar "x") "variable x not found"
+        failInferSpecCase (ELet "x" (EVar "x") (EVar "x")) "variable x not found"
         runInferSpecCase (ELet "x" (EVar "id") $ EVar "x") "∀a. a → a"
         runInferSpecCase (ELet "x" (EFun [EParam "y" Nothing] $ EVar "y") $ EVar "x") "∀a. a → a"
         runInferSpecCase (EFun [EParam "x" Nothing] $ EVar "x") "∀a. a → a"
@@ -55,7 +61,7 @@ spec = do
         runInferSpecCase (ELet "f" (EFun [EParam "x" Nothing] $ EVar "x") $ ECall (ECall (EVar "eq-curry") [EVar "f"]) [EVar "succ"]) "bool"
         -- let polymorphism
         runInferSpecCase (ELet "f" (EFun [EParam "x" Nothing] $ EVar "x") $ ECall (EVar "pair") [ECall (EVar "f") [EVar "one"], ECall (EVar "f") [EVar "true"]]) "pair[int, bool]"
-        infer assumptions 0 (EFun [EParam "f" Nothing] $ ECall (EVar "pair") [ECall (EVar "f") [EVar "one"], ECall (EVar "f") [EVar "true"]]) `shouldThrow` errorCall "cannot unify types int and bool"
+        failInferSpecCase (EFun [EParam "f" Nothing] $ ECall (EVar "pair") [ECall (EVar "f") [EVar "one"], ECall (EVar "f") [EVar "true"]]) "cannot unify types int and bool"
         runInferSpecCase (ELet "f" (EFun [EParam "x" Nothing, EParam "y" Nothing] $ ELet "a" (ECall (EVar "eq") [EVar "x", EVar "y"]) $ ECall (EVar "eq") [EVar "x", EVar "y"]) $ EVar "f") "∀a. (a, a) → bool"
         runInferSpecCase (ELet "f" (EFun [EParam "x" Nothing, EParam "y" Nothing] $ ELet "a" (ECall (ECall (EVar "eq-curry") [EVar "x"]) [EVar "y"]) $ ECall (ECall (EVar "eq-curry") [EVar "x"]) [EVar "y"]) $ EVar "f") "∀a. (a, a) → bool"
         runInferSpecCase (ECall (EVar "id") [EVar "id"]) "∀a. a → a"
@@ -66,16 +72,16 @@ spec = do
         runInferSpecCase (ECall (ECall (EVar "cons-curry") [EVar "id"]) [EVar "nil"]) "∀a. list[a → a]"
         runInferSpecCase (ELet "lst1" (ECall (EVar "cons") [EVar "id", EVar "nil"]) $ ELet "lst2" (ECall (EVar "cons") [EVar "succ", EVar "lst1"]) $ EVar "lst2") "list[int → int]"
         runInferSpecCase (ECall (ECall (EVar "cons-curry") [EVar "id"]) [ECall (ECall (EVar "cons-curry") [EVar "succ"]) [ECall (ECall (EVar "cons-curry") [EVar "id"]) [EVar "nil"]]]) "list[int → int]"
-        infer assumptions 0 (ECall (EVar "plus") [EVar "one", EVar "true"]) `shouldThrow` errorCall "cannot unify types int and bool"
-        infer assumptions 0 (ECall (EVar "plus") [EVar "one"]) `shouldThrow` errorCall "unexpected number of arguments"
+        failInferSpecCase (ECall (EVar "plus") [EVar "one", EVar "true"]) "cannot unify types int and bool"
+        failInferSpecCase (ECall (EVar "plus") [EVar "one"]) "unexpected number of arguments"
         runInferSpecCase (EFun [EParam "x" Nothing] $ ELet "y" (EVar "x") $ EVar "y") "∀a. a → a"
         runInferSpecCase (EFun [EParam "x" Nothing] $ ELet "y" (ELet "z" (ECall (EVar "x") [EFun [EParam "x" Nothing] $ EVar "x"]) $ EVar "z") $ EVar "y") "∀a,b. ((a → a) → b) → b"
         runInferSpecCase (EFun [EParam "x" Nothing] $ EFun [EParam "y" Nothing] $ ELet "x" (ECall (EVar "x") [EVar "y"]) $ ECall (EVar "x") [EVar "y"]) "∀a,b. (a → a → b) → a → b"
         runInferSpecCase (EFun [EParam "x" Nothing] $ ELet "y" (EFun [EParam "z" Nothing] $ ECall (EVar "x") [EVar "z"]) $ EVar "y") "∀a,b. (a → b) → a → b"
         runInferSpecCase (EFun [EParam "x" Nothing] $ EFun [EParam "y" Nothing] $ ELet "x" (ECall (EVar "x") [EVar "y"]) $ EFun [EParam "x" Nothing] $ ECall (EVar "y") [EVar "x"]) "∀a,b,c. ((a → b) → c) → (a → b) → a → b"
-        infer assumptions 0 (EFun [EParam "x" Nothing] $ ELet "y" (EVar "x") $ ECall (EVar "y") [EVar "y"]) `shouldThrow` errorCall "recursive types"
-        infer assumptions 0 (EFun [EParam "x" Nothing] $ ECall (EVar "x") [EVar "x"]) `shouldThrow` errorCall "recursive types"
-        infer assumptions 0 (ECall (EVar "one") [EVar "id"]) `shouldThrow` errorCall "expected a function"
+        failInferSpecCase (EFun [EParam "x" Nothing] $ ELet "y" (EVar "x") $ ECall (EVar "y") [EVar "y"]) "recursive types"
+        failInferSpecCase (EFun [EParam "x" Nothing] $ ECall (EVar "x") [EVar "x"]) "recursive types"
+        failInferSpecCase (ECall (EVar "one") [EVar "id"]) "expected a function"
         runInferSpecCase (EFun [EParam "x" Nothing] $ ELet "y" (EFun [EParam "z" Nothing] $ EVar "z") $ ECall (EVar "y") [EVar "y"]) "∀a,b. a → b → b"
         runInferSpecCase (EFun [EParam "f" Nothing] $ ELet "x" (EFun [EParam "g" Nothing, EParam "y" Nothing] $ ELet "_" (ECall (EVar "g") [EVar "y"]) $ ECall (EVar "eq") [EVar "f", EVar "g"]) $ EVar "x") "∀a,b. (a → b) → (a → b, a) → bool"
         runInferSpecCase (ELet "const" (EFun [EParam "x" Nothing] $ EFun [EParam "y" Nothing] $ EVar "x") $ EVar "const") "∀a,b. a → b → a"
@@ -84,3 +90,19 @@ spec = do
         runInferSpecCase (ECall (EVar "apply") [EVar "succ", EVar "one"]) "int"
         runInferSpecCase (ECall (ECall (EVar "apply-curry") [EVar "succ"]) [EVar "one"]) "int"
         runInferSpecCase (ECall (EVar "single") [EVar "id"]) "∀a. list[a → a]"
+    describe "HMF inference test" $
+      it "should support first class polymorphism" $ do
+        runInferSpecCase (EVar "ids") "list[∀a. a → a]"
+        failInferSpecCase (EFun [EParam "y" Nothing] $ ECall (EVar "pair") [ECall (EVar "y") [EVar "one"], ECall (EVar "y") [EVar "true"]]) "cannot unify types int and bool"
+        -- support parametric polymorphism
+        runInferSpecCase (EFun [EParam "y" (Just (TAnn [] (TForall [0] (TArrow [tvarA] tvarA))))] $ ECall (EVar "pair") [ECall (EVar "y") [EVar "one"], ECall (EVar "y") [EVar "true"]]) "(∀a. a → a) → pair[int, bool]"
+        runInferSpecCase (ECall (EVar "cons") [EVar "ids", EVar "nil"]) "list[list[∀a. a → a]]"
+        runInferSpecCase (ECall (EVar "choose") [EVar "nil", EVar "ids"]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (EVar "choose") [EVar "ids", EVar "nil"]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (EVar "cons") [EFun [EParam "x" Nothing] (EVar "x"), EVar "ids"]) "list[∀a. a → a]"
+        runInferSpecCase (ELet "rev_cons" (EFun [EParam "x" Nothing, EParam "y" Nothing] $ ECall (EVar "cons") [EVar "y", EVar "x"]) $ ECall (EVar "rev_cons") [EVar "ids", EVar "id"]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (EVar "cons") [EVar "id", EVar "ids"]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (EVar "cons") [EVar "id", ECall (EVar "cons") [EVar "succ", EVar "nil"]]) "list[int → int]"
+        runInferSpecCase (ECall (EVar "poly") [EVar "id"]) "pair[int, bool]"
+        runInferSpecCase (ECall (EVar "poly") [EFun [EParam "x" Nothing] $ EVar "x"]) "pair[int, bool]"
+        failInferSpecCase (ECall (EVar "poly") [EVar "succ"]) "cannot unify types @generic0 and int"
