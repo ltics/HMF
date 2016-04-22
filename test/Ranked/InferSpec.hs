@@ -3,6 +3,7 @@ module Ranked.InferSpec where
 import Ranked.Ast
 import Ranked.Type
 import Ranked.Infer
+import Ranked.Env
 import State (resetId)
 import qualified Text.PrettyPrint as PP
 import Test.Hspec

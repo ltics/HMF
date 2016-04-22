@@ -4,6 +4,7 @@ module FCP.Infer where
 
 import FCP.Ast
 import FCP.Type hiding (Name)
+import FCP.Env
 import State
 import Data.Function (on)
 import Data.List (sortBy, intercalate)
@@ -30,7 +31,6 @@ newBoundVar = do
     return (next, TVar $ createState $ Bound next)
 
 type IdType = M.Map Id T
-type Env = M.Map Name T
 
 canNotUnifyError :: T -> T -> Infer ()
 canNotUnifyError t1 t2 = error $ "cannot unify types " ++ show t1 ++ " and " ++ show t2
@@ -331,4 +331,3 @@ inferArgs env level paramTs args = do
               then unify paramT argT
               else subsume level paramT argT)
           sortedPairs
-
