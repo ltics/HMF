@@ -6,9 +6,10 @@ import FCP.Ast
 import FCP.Type hiding (Name)
 import State
 import Data.Function (on)
-import Data.List (sortBy)
+import Data.List (sortBy, intercalate)
 import Data.IORef
 import Control.Monad
+import Control.Monad.Loops (allM)
 import Control.Exception
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -263,14 +264,32 @@ infer env level e = case e of
                         EVar name -> case M.lookup name env of
                                         Just t -> return t
                                         Nothing -> error $ "variable " ++ name ++ " not found"
-                        {-EFun params body -> do
+                        EFun params body -> do
                             fnEnvRef <- newIORef env
                             varListRef <- newIORef []
-                            
-                            paramTyList <- mapM (const $ newVar level) params
-                            let fnEnv = foldl (\env' (n, t) -> M.insert n t env') env $ zip params paramTyList
-                            rtnTy <- infer fnEnv level body
-                            return $ TArrow paramTyList rtnTy-}
+                            paramTs <- mapM (\(EParam name maybeAnn) -> do
+                                                paramT <- case maybeAnn of
+                                                            Nothing -> do
+                                                                varT <- newVar (level + 1)
+                                                                modifyIORef varListRef (\l -> varT : l)
+                                                                return varT
+                                                            Just ann -> do
+                                                                (varTs, annT) <- instantiateTypeAnn (level + 1) ann
+                                                                modifyIORef varListRef (\l -> varTs ++ l)
+                                                                return annT
+                                                modifyIORef fnEnvRef $ M.insert name paramT
+                                                return paramT)
+                                            params
+                            fnEnv <- readIORef fnEnvRef
+                            inferedRtnT <- infer fnEnv (level + 1) body
+                            rtnT <- if isAnnotated body
+                                    then return inferedRtnT
+                                    else instantiate (level + 1) inferedRtnT
+                            varList <- readIORef varListRef
+                            isAllMonomorphic <- allM isMonomorphic varList
+                            if isAllMonomorphic
+                            then generalize level $ TArrow paramTs rtnT
+                            else error ("polymorphic parameter inferred: " ++ intercalate ", " (map show varList))
                         ELet name value body -> do
                             valueT <- infer env (level + 1) value
                             infer (M.insert name valueT env) level body
