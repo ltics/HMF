@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wall #-}
+
 module FCP.Env where
 
 import FCP.Ast
@@ -20,30 +22,37 @@ tcPair :: T
 tcPair = TConst "pair"
 
 tvarA :: T
-tvarA = TVar (createState (Generic 0))
+tvarA = TVar (createState (Bound 0))
 
 tvarB :: T
-tvarB = TVar (createState (Generic 1))
+tvarB = TVar (createState (Bound 1))
 
-polyList :: T
-polyList = TApp tcList [tvarA]
+polyA :: T
+polyA = TForall [0] $ TArrow [tvarA] tvarA
 
-polyList' :: T
-polyList' = TApp tcList [tvarB]
+tvarListA :: T
+tvarListA = TApp tcList [tvarA]
+
+tvarListB :: T
+tvarListB = TApp tcList [tvarB]
+
+polyListA :: T
+polyListA = TApp tcList [polyA]
 
 polyPair :: T
 polyPair = TApp tcPair [tvarA, tvarB]
 
 assumptions :: Env
 assumptions = M.fromList
-    [("head", TArrow [polyList] tvarA),
-     ("tail", TArrow [polyList] polyList),
-     ("nil", polyList),
-     ("cons", TArrow [tvarA, polyList] polyList),
-     ("cons-curry", TArrow [tvarA] $ TArrow [polyList] polyList),
-     ("map", TArrow [TArrow [tvarA] tvarB, polyList] polyList'),
-     ("map-curry", TArrow [TArrow [tvarA] tvarB] $ TArrow [polyList] polyList'),
-     ("single", TArrow [tvarA] polyList),
+    [("head", TForall [0] $ TArrow [tvarListA] tvarA),
+     ("tail", TForall [0] $ TArrow [tvarListA] tvarListA),
+     ("nil", TForall [0] $ tvarListA),
+     ("cons", TForall [0] $ TArrow [tvarA, tvarListA] tvarListA),
+     ("cons-curry", TForall [0] $ TArrow [tvarA] $ TArrow [tvarListA] tvarListA),
+     ("map", TForall [0, 1] $ TArrow [TArrow [tvarA] tvarB, tvarListA] tvarListB),
+     ("map-curry", TForall [0, 1] $ TArrow [TArrow [tvarA] tvarB] $ TArrow [tvarListA] tvarListB),
+     ("single", TForall [0] $ TArrow [tvarA] tvarListA),
+     ("length", TForall [0] $ TArrow [tvarListA] tcInt),
      ("zero", tcInt),
      ("one", tcInt),
      ("succ", TArrow [tcInt] tcInt),
@@ -51,15 +60,27 @@ assumptions = M.fromList
      ("true", tcBool),
      ("false", tcBool),
      ("not", TArrow [tcBool] tcBool),
-     ("eq", TArrow [tvarA, tvarA] tcBool),
-     ("eq-curry", TArrow [tvarA] $ TArrow [tvarA] tcBool),
-     ("pair", TArrow [tvarA, tvarB] polyPair),
-     ("pair-curry", TArrow [tvarA] $ TArrow [tvarB] polyPair),
-     ("first", TArrow [polyPair] tvarA),
-     ("second", TArrow [polyPair] tvarB),
-     ("id", TArrow [tvarA] tvarA),
-     ("const", TArrow [tvarA] $ TArrow [tvarB] tvarA),
-     ("apply", TArrow [TArrow [tvarA] tvarB, tvarA] tvarB),
-     ("apply-curry", TArrow [TArrow [tvarA] tvarB] $ TArrow [tvarA] tvarB),
-     ("choose", TArrow [tvarA, tvarA] tvarA),
-     ("choose-curry", TArrow [tvarA] $ TArrow [tvarA] tvarA)]
+     ("eq", TForall [0] $ TArrow [tvarA, tvarA] tcBool),
+     ("eq-curry", TForall [0] $ TArrow [tvarA] $ TArrow [tvarA] tcBool),
+     ("pair", TForall [0, 1] $ TArrow [tvarA, tvarB] polyPair),
+     ("pair-curry", TForall [0, 1] $ TArrow [tvarA] $ TArrow [tvarB] polyPair),
+     ("first", TForall [0] $ TArrow [polyPair] tvarA),
+     ("second", TForall [0] $ TArrow [polyPair] tvarB),
+     ("id", polyA),
+     ("ids", polyListA),
+     ("id-id", TArrow [polyA] polyA),
+     ("almost-id-id", TForall [0] $ TArrow [polyA] $ TArrow [tvarA] tvarA),
+     ("id-ids", TArrow [polyListA] polyListA),
+     ("id-magic", TArrow [TForall [0, 1] $ TArrow [tvarA] tvarB] $ TForall [0, 1] $ TArrow [tvarA] tvarB),
+     ("id-succ", TArrow [TArrow [tcInt] tcInt] $ TArrow [tcInt] tcInt),
+     ("const", TForall [0, 1] $ TArrow [tvarA] $ TArrow [tvarB] tvarA),
+     ("apply", TForall [0, 1] $ TArrow [TArrow [tvarA] tvarB, tvarA] tvarB),
+     ("apply-curry", TForall [0, 1] $ TArrow [TArrow [tvarA] tvarB] $ TArrow [tvarA] tvarB),
+     ("rev-apply", TForall [0, 1] $ TArrow [tvarA, TArrow [tvarA] tvarB] tvarB),
+     ("rev-apply-curry", TForall [0, 1] $ TArrow [tvarA] $ TArrow [TArrow [tvarA] tvarB] tvarB),
+     ("choose", TForall [0] $ TArrow [tvarA, tvarA] tvarA),
+     ("choose-curry", TForall [0] $ TArrow [tvarA] $ TArrow [tvarA] tvarA),
+     ("magic", TForall [0, 1] $ TArrow [tvarA] tvarB),
+     ("any", TForall [0] tvarA),
+     ("poly", TArrow [polyA] $ TApp tcPair [tcInt, tcBool]),
+     ("special", TArrow [TArrow [polyA] polyA] polyA)]

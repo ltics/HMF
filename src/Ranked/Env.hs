@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wall #-}
+
 module Ranked.Env where
 
 import Ranked.Ast
@@ -25,25 +27,25 @@ tvarA = TVar (createState (Generic 0))
 tvarB :: T
 tvarB = TVar (createState (Generic 1))
 
-polyList :: T
-polyList = TApp tcList [tvarA]
+tvarListA :: T
+tvarListA = TApp tcList [tvarA]
 
-polyList' :: T
-polyList' = TApp tcList [tvarB]
+tvarListB :: T
+tvarListB = TApp tcList [tvarB]
 
 polyPair :: T
 polyPair = TApp tcPair [tvarA, tvarB]
 
 assumptions :: Env
 assumptions = M.fromList
-    [("head", TArrow [polyList] tvarA),
-     ("tail", TArrow [polyList] polyList),
-     ("nil", polyList),
-     ("cons", TArrow [tvarA, polyList] polyList),
-     ("cons-curry", TArrow [tvarA] $ TArrow [polyList] polyList),
-     ("map", TArrow [TArrow [tvarA] tvarB, polyList] polyList'),
-     ("map-curry", TArrow [TArrow [tvarA] tvarB] $ TArrow [polyList] polyList'),
-     ("single", TArrow [tvarA] polyList),
+    [("head", TArrow [tvarListA] tvarA),
+     ("tail", TArrow [tvarListA] tvarListA),
+     ("nil", tvarListA),
+     ("cons", TArrow [tvarA, tvarListA] tvarListA),
+     ("cons-curry", TArrow [tvarA] $ TArrow [tvarListA] tvarListA),
+     ("map", TArrow [TArrow [tvarA] tvarB, tvarListA] tvarListB),
+     ("map-curry", TArrow [TArrow [tvarA] tvarB] $ TArrow [tvarListA] tvarListB),
+     ("single", TArrow [tvarA] tvarListA),
      ("zero", tcInt),
      ("one", tcInt),
      ("succ", TArrow [tcInt] tcInt),
