@@ -1,5 +1,5 @@
 module Lib
-    ( someFunc
+    (someFunc
     ) where
 
 import Ranked.Type

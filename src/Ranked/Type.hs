@@ -21,7 +21,7 @@ data T = TConst Name -- type constants int, bool, string
 data TV = Unbound Id Rank
         | Link T
         | Generic Id
-        deriving (Eq)
+  deriving (Eq)
 
 instance Eq T where
     TConst name1 == TConst name2 = name1 == name2

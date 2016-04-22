@@ -317,7 +317,7 @@ getOrdering ty = do
             _ -> return 0
     _ -> return 0
 
-inferArgs :: Env -> Rank ->  [T] -> [Expr] -> Infer ()
+inferArgs :: Env -> Rank -> [T] -> [Expr] -> Infer ()
 inferArgs env level paramTs args = do
     let pairs = zip paramTs args
     pairsWithOrd <- mapM (\(p, a) -> do

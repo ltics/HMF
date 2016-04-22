@@ -25,7 +25,7 @@ data TV = Unbound Id Rank
         | Bound Id
         | Link T
         | Generic Id
-        deriving (Eq, Ord)
+  deriving (Eq, Ord)
 
 unlink :: T -> Infer T
 unlink t = case t of

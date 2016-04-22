@@ -19,7 +19,7 @@ spec :: Spec
 spec = do
     describe "create var" $
       it "should create vars" $ do
-        params <- mapM (\_ -> newVar 0) [1..3]
+        params <- mapM (\ _ -> newVar 0) [1..3]
         resetId
         (PP.text . show $ params) `shouldBe` PP.text "[_0,_1,_2]"
     describe "unification test" $ do
