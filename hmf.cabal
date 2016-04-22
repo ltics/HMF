@@ -40,6 +40,8 @@ test-suite hmf-test
   type:                exitcode-stdio-1.0
   other-modules:       Ranked.TypeSpec
                      , Ranked.InferSpec
+                     , FCP.TypeSpec
+                     , FCP.InferSpec
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base

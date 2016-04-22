@@ -84,4 +84,3 @@ spec = do
         runInferSpecCase (ECall (EVar "apply") [EVar "succ", EVar "one"]) "int"
         runInferSpecCase (ECall (ECall (EVar "apply-curry") [EVar "succ"]) [EVar "one"]) "int"
         runInferSpecCase (ECall (EVar "single") [EVar "id"]) "∀a. list[a → a]"
-

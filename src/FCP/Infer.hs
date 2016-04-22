@@ -233,7 +233,7 @@ generalize level t = do
                         Unbound otherId otherLevel | otherLevel > level -> do
                                                                         writeIORef var $ Bound otherId
                                                                         varIdsRevRefV <- readIORef varIdsRevRef
-                                                                        when (otherId `elem` varIdsRevRefV) $ writeIORef varIdsRevRef (otherId : varIdsRevRefV)
+                                                                        unless (otherId `elem` varIdsRevRefV) $ writeIORef varIdsRevRef (otherId : varIdsRevRefV)
                                                    | otherwise -> return ()
     f t
     varIdsRevRefV <- readIORef varIdsRevRef

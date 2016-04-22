@@ -18,8 +18,9 @@ spec = do
       it "should remove internal link wrapper" $ do
         let tvarA = TVar (createState (Bound 0))
         let tvarB = TVar (createState (Bound 1))
+        let basicFunc = TForall [0, 1] $ TArrow [tvarA] tvarB
         let universalQuantifier = EAnn (EVar "x") (TAnn [] (TForall [0,1] (TArrow [tvarA] tvarB)))
         let existentialQuantifier = EAnn (EVar "x") (TAnn [0,1] (TArrow [tvarA] tvarB))
+        (PP.text . show $ basicFunc) `shouldBe` PP.text "∀a,b. a → b"
         (PP.text . show $ universalQuantifier) `shouldBe` PP.text "x : ∀a,b. a → b"
         (PP.text . show $ existentialQuantifier) `shouldBe` PP.text "x : ∃a,b. a → b"
-
