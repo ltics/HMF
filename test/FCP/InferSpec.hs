@@ -95,7 +95,7 @@ spec = do
         runInferSpecCase (EVar "ids") "list[∀a. a → a]"
         failInferSpecCase (EFun [EParam "y" Nothing] $ ECall (EVar "pair") [ECall (EVar "y") [EVar "one"], ECall (EVar "y") [EVar "true"]]) "cannot unify types int and bool"
         -- support parametric polymorphism
-        runInferSpecCase (EFun [EParam "y" (Just (TAnn [] (TForall [0] (TArrow [tvarA] tvarA))))] $ ECall (EVar "pair") [ECall (EVar "y") [EVar "one"], ECall (EVar "y") [EVar "true"]]) "(∀a. a → a) → pair[int, bool]"
+        runInferSpecCase (EFun [EParam "y" (Just (TAnn [] (TForall [0] $ TArrow [tvarA] tvarA)))] $ ECall (EVar "pair") [ECall (EVar "y") [EVar "one"], ECall (EVar "y") [EVar "true"]]) "(∀a. a → a) → pair[int, bool]"
         runInferSpecCase (ECall (EVar "cons") [EVar "ids", EVar "nil"]) "list[list[∀a. a → a]]"
         runInferSpecCase (ECall (EVar "choose") [EVar "nil", EVar "ids"]) "list[∀a. a → a]"
         runInferSpecCase (ECall (EVar "choose") [EVar "ids", EVar "nil"]) "list[∀a. a → a]"
@@ -106,3 +106,43 @@ spec = do
         runInferSpecCase (ECall (EVar "poly") [EVar "id"]) "pair[int, bool]"
         runInferSpecCase (ECall (EVar "poly") [EFun [EParam "x" Nothing] $ EVar "x"]) "pair[int, bool]"
         failInferSpecCase (ECall (EVar "poly") [EVar "succ"]) "cannot unify types @generic0 and int"
+        runInferSpecCase (ECall (EVar "apply") [EVar "succ", EVar "one"]) "int"
+        runInferSpecCase (ECall (EVar "rev-apply") [EVar "one", EVar "succ"]) "int"
+        runInferSpecCase (ECall (EVar "apply") [EVar "poly", EVar "id"]) "pair[int, bool]"
+        runInferSpecCase (ECall (ECall (EVar "apply-curry") [EVar "poly"]) [EVar "id"]) "pair[int, bool]"
+        runInferSpecCase (ECall (EVar "rev-apply") [EVar "id", EVar "poly"]) "pair[int, bool]"
+        failInferSpecCase (ECall (ECall (EVar "rev-apply-curry") [EVar "id"]) [EVar "poly"]) "cannot unify types @unknown4 → @unknown4 and ∀a. a → a"
+        -- have to add explicit type annotation in function calls
+        runInferSpecCase (ECall (ECall (EVar "rev-apply-curry") [EAnn (EVar "id") (TAnn [] (TForall [0] (TArrow [tvarA] tvarA)))]) [EVar "poly"]) "pair[int, bool]"
+        runInferSpecCase (EAnn (EAnn (EVar "id") (TAnn [] (TForall [0] $ TArrow [tvarA] tvarA))) $ TAnn [] $ TArrow [tcInt] tcInt) "int → int"
+        runInferSpecCase (EAnn (EVar "id") $ TAnn [] $ TArrow [tcInt] tcInt) "int → int"
+        -- single(id : forall[a] a -> a) is extremely different from single(id), note pos of quantifier
+        runInferSpecCase (ECall (EVar "single") [EAnn (EVar "id") $ TAnn [] (TForall [0] $ TArrow [tvarA] tvarA)]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (EVar "id->id") [EVar "id"]) "∀a. a → a"
+        runInferSpecCase (ECall (EVar "almost-id-id") [EVar "id"]) "∀a. a → a"
+        runInferSpecCase (EFun [EParam "x" $ Just (TAnn [] (TForall [0] $ TArrow [tvarA] tvarA))] $ EVar "x") "∀a. (∀b. b → b) → a → a"
+        failInferSpecCase (EFun [EParam "id" Nothing] $ ECall (EVar "poly") $ [EVar "id"]) "type @generic1 → @generic1 is not an instance of ∀a. a → a"
+        failInferSpecCase (EFun [EParam "ids" Nothing] $ ECall (EVar "id-ids") $ [EVar "ids"]) "polymorphic parameter inferred: list[∀a. a → a]"
+        runInferSpecCase (ECall (EVar "poly") [ECall (EVar "id") [EVar "id"]]) "pair[int, bool]"
+        runInferSpecCase (ECall (EVar "length") [EVar "ids"]) "int"
+        runInferSpecCase (EFun [EParam "x" Nothing] $ EFun [EParam "y" Nothing] $ ELet "z" (ECall (EVar "choose") [EVar "x", EVar "y"]) (EVar "z")) "∀a. a → a → a"
+        -- note the position of quantifier
+        runInferSpecCase (ECall (EFun [EParam "x" Nothing] $ EFun [EParam "y" Nothing] $ ELet "z" (ECall (EVar "choose") [EVar "x", EVar "y"]) (EVar "z")) [EAnn (EVar "id") $ TAnn [] (TForall [0] $ TArrow [tvarA] tvarA)]) "(∀a. a → a) → ∀a. a → a"
+        runInferSpecCase (ECall (EFun [EParam "x" Nothing] $ EFun [EParam "y" Nothing] $ ELet "z" (ECall (EVar "choose") [EVar "x", EVar "y"]) (EVar "z")) [EVar "id"]) "∀a. (a → a) → a → a"
+        runInferSpecCase (ECall (EVar "map") [EVar "head", ECall (EVar "single") [EVar "ids"]]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (ECall (EVar "map-curry") [EVar "head"]) [ECall (EVar "single") [EVar "ids"]]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (EVar "apply") [ECall (EVar "map-curry") [EVar "head"], ECall (EVar "single") [EVar "ids"]]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (ECall (EVar "apply-curry") [ECall (EVar "map-curry") [EVar "head"]]) [ECall (EVar "single") [EVar "ids"]]) "list[∀a. a → a]"
+        runInferSpecCase (ECall (EVar "apply") [EVar "id", EVar "one"]) "int"
+        runInferSpecCase (ECall (ECall (EVar "apply-curry") [EVar "id"]) [EVar "one"]) "int"
+        -- this is really magic that bound type variable A and B in magic can unify to the same one
+        runInferSpecCase (ECall (EVar "poly") [EVar "magic"]) "pair[int, bool]"
+        runInferSpecCase (ECall (EVar "id-magic") [EVar "magic"]) "∀a,b. a → b"
+        failInferSpecCase (ECall (EVar "id-magic") [EVar "id"]) "cannot unify types @generic1 and @generic2"
+        -- univeral quantifier
+        runInferSpecCase (EFun [EParam "f" $ Just (TAnn [] (TForall [0, 1] $ TArrow [tvarA] tvarB))] $ ELet "a" (ECall (EVar "id-magic") [EVar "f"]) $ EVar "one") "(∀a,b. a → b) → int"
+        -- existential quantifier
+        failInferSpecCase (EFun [EParam "f" $ Just (TAnn [0, 1] $ TArrow [tvarA] tvarB)] $ ECall (EVar "id-magic") [EVar "f"]) "type @generic3 → @generic2 is not an instance of ∀a,b. a → b"
+        -- unify bound type variables
+        runInferSpecCase (EFun [EParam "f" $ Just (TAnn [] (TForall [0, 1] $ TArrow [tvarA] tvarB))] $ EAnn (EVar "f") $ TAnn [] (TForall [0] (TArrow [tvarA] tvarA))) "(∀a,b. a → b) → ∀a. a → a"
+        runInferSpecCase (ELet "const" (EAnn (EVar "any") $ TAnn [] (TForall [0] $ TArrow [tvarA] (TForall [1] $ TArrow [tvarB] tvarA))) $ ECall (EVar "const") [EVar "any"]) "∀a,b. a → b"

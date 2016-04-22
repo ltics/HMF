@@ -68,7 +68,7 @@ assumptions = M.fromList
      ("second", TForall [0] $ TArrow [polyPair] tvarB),
      ("id", polyA),
      ("ids", polyListA),
-     ("id-id", TArrow [polyA] polyA),
+     ("id->id", TArrow [polyA] polyA),
      ("almost-id-id", TForall [0] $ TArrow [polyA] $ TArrow [tvarA] tvarA),
      ("id-ids", TArrow [polyListA] polyListA),
      ("id-magic", TArrow [TForall [0, 1] $ TArrow [tvarA] tvarB] $ TForall [0, 1] $ TArrow [tvarA] tvarB),
