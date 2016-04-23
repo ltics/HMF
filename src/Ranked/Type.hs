@@ -9,11 +9,11 @@ import System.IO.Unsafe(unsafePerformIO)
 import qualified Data.Map as M
 import qualified Text.PrettyPrint as PP
 
-type Name = String
+type TName = String
 type Id = Int -- type variable identifier
 type Rank = Int -- type variable rank stand for position in Γ
 
-data T = TConst Name -- type constants int, bool, string
+data T = TConst TName -- type constants int, bool, string
        | TArrow [T] T
        | TApp T [T]
        | TVar (IORef TV)
@@ -35,7 +35,7 @@ instance Eq T where
 instance Show T where
     showsPrec _ x = shows $ PP.text $ prType x
 
-nameOfInt :: Int -> Name
+nameOfInt :: Int -> TName
 nameOfInt i = let name = [(toEnum $ 97 + i `mod` 26) :: Char]
               in if i >= 26 then name ++ show (i `quot` 26) else name
 
@@ -51,7 +51,7 @@ idNameMapReset = writeIORef idNameMap M.empty
 countReset :: Infer ()
 countReset = writeIORef count 0
 
-prType' :: T -> Infer Name
+prType' :: T -> Infer TName
 prType' t =
     case t of
          TConst name -> return name

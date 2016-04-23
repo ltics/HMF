@@ -9,15 +9,15 @@ import Data.List (intercalate)
 import qualified Data.Map as M
 import qualified Text.PrettyPrint as PP
 
-type Name = String
+type EName = String
 data TAnn = TAnn [Id] T -- type annotation ∃a,b. a → b | ∀a,b. a → b etc.
 
-data EParam = EParam Name (Maybe TAnn)
+data EParam = EParam EName (Maybe TAnn)
 
-data Expr = EVar Name
+data Expr = EVar EName
           | EFun [EParam] Expr
           | ECall Expr [Expr]
-          | ELet Name Expr Expr
+          | ELet EName Expr Expr
           | EAnn Expr TAnn -- expression with type annotation ƒ : a → b
 
 isAnnotated :: Expr -> Bool

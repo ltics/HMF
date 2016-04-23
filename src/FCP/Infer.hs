@@ -3,7 +3,7 @@
 module FCP.Infer where
 
 import FCP.Ast
-import FCP.Type hiding (Name)
+import FCP.Type
 import FCP.Env
 import State
 import Data.Function (on)

@@ -7,7 +7,7 @@ import Ranked.Type
 import State
 import qualified Data.Map as M
 
-type Env = M.Map Ranked.Ast.Name T
+type Env = M.Map EName T
 
 tcInt :: T
 tcInt = TConst "int"

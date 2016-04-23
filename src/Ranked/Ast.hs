@@ -4,12 +4,12 @@ module Ranked.Ast where
 
 import Data.List (intercalate)
 
-type Name = String
+type EName = String
 
-data Expr = EVar Name
-          | EFun [Name] Expr
+data Expr = EVar EName
+          | EFun [EName] Expr
           | ECall Expr [Expr]
-          | ELet Name Expr Expr
+          | ELet EName Expr Expr
 
 instance Show Expr where
     show (EVar name) = name

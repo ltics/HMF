@@ -10,12 +10,12 @@ import Control.Monad.Loops (allM)
 import qualified Data.Map as M
 import qualified Text.PrettyPrint as PP
 
-type Name = String
+type TName = String
 type Id = Int -- type variable identifier
 type Rank = Int -- type variable rank stand for position in Γ
-type IdName = M.Map Id Name
+type IdName = M.Map Id TName
 
-data T = TConst Name -- type constants int, bool, string
+data T = TConst TName -- type constants int, bool, string
        | TArrow [T] T
        | TApp T [T]
        | TVar (IORef TV)
@@ -79,11 +79,11 @@ instance Ord T where
 instance Show T where
     showsPrec _ x = shows $ PP.text $ stringOfType x
 
-nameOfInt :: Int -> Name
+nameOfInt :: Int -> TName
 nameOfInt i = let name = [(toEnum $ 97 + i `mod` 26) :: Char]
               in if i >= 26 then name ++ show (i `quot` 26) else name
 
-extendIdNameMap :: IdName -> [Id] -> ([Name], IdName)
+extendIdNameMap :: IdName -> [Id] -> ([TName], IdName)
 extendIdNameMap idNameMap varIds =
     let (nameListRev, idNameMap') = foldl (\(nameList, idNameMap'') varId ->
                                             let newName = nameOfInt (length idNameMap'') in (newName : nameList, M.insert varId newName idNameMap''))
