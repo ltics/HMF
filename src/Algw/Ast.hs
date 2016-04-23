@@ -2,10 +2,9 @@
 
 module Algw.Ast where
 
-type Id = String
 type EName = String
 
-data Expr = EVar Id
+data Expr = EVar EName
           | EAbs EName Expr -- lambda abstraction
           | EApp Expr Expr -- application
           | ELet EName Expr Expr -- let binding

@@ -15,6 +15,8 @@ spec = do
         c <- newGenVar
         resetId
         (PP.text . show $ TArrow [a, b] c) `shouldBe` PP.text "∀a,b,c. (a, b) → c"
+        (PP.text . show $ TArrow [TArrow [TArrow [a] b] a] b) `shouldBe` PP.text "∀a,b. ((a → b) → a) → b"
+        (PP.text . show $ TArrow [TArrow [a] b] $ TArrow [a] b) `shouldBe` PP.text "∀a,b. (a → b) → a → b"
       it "stringify const type" $
         (PP.text . show $ TConst "int") `shouldBe` PP.text "int"
     describe "type equality test" $ do
