@@ -121,6 +121,8 @@ spec = do
         runInferSpecCase (ECall (EVar "id->id") [EVar "id"]) "∀a. a → a"
         runInferSpecCase (ECall (EVar "almost-id-id") [EVar "id"]) "∀a. a → a"
         runInferSpecCase (EFun [EParam "x" $ Just (TAnn [] (TForall [0] $ TArrow [tvarA] tvarA))] $ EVar "x") "∀a. (∀b. b → b) → a → a"
+        -- power of first class polymorphism ƒ x -> x(x) ƒ x:∀a. a → a → x(x)
+        runInferSpecCase (EFun [EParam "f" $ Just $ TAnn [] (TForall [0] $ TArrow [tvarA] tvarA)] $ ECall (EVar "f") [EVar "f"]) "∀a. (∀b. b → b) → a → a"
         failInferSpecCase (EFun [EParam "id" Nothing] $ ECall (EVar "poly") $ [EVar "id"]) "type @generic1 → @generic1 is not an instance of ∀a. a → a"
         failInferSpecCase (EFun [EParam "ids" Nothing] $ ECall (EVar "id-ids") $ [EVar "ids"]) "polymorphic parameter inferred: list[∀a. a → a]"
         runInferSpecCase (ECall (EVar "poly") [ECall (EVar "id") [EVar "id"]]) "pair[int, bool]"
