@@ -45,6 +45,7 @@ test-suite hmf-test
                      , Ranked.InferSpec
                      , FCP.TypeSpec
                      , FCP.InferSpec
+                     , Algw.InferSpec
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
