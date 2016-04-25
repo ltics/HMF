@@ -1,10 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 module Algw.Type where
 
-import Algw.Ast
 import Data.Maybe
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -65,15 +62,7 @@ instance TypeVars Scheme where
   allVars (Poly a t) = S.insert a $ allVars t
 
   freeVars (Mono t) = freeVars t
-  freeVars (Poly a t) = S.delete a $ allVars t
+  freeVars (Poly a t) = S.delete a $ freeVars t
 
   subst s (Mono t) = Mono $ subst s t
   subst s (Poly a t) = Poly a $ subst (M.delete a s) t
-
--- an environment is mapping variables to type schemes
-type Env = M.Map EName Scheme
-
-instance TypeVars Env where
-  allVars = M.foldl (\avs t -> S.union avs $ allVars t) S.empty
-  freeVars = M.foldl (\fvs t -> S.union fvs $ freeVars t) S.empty
-  subst s = M.map (subst s)

@@ -25,6 +25,7 @@ library
                      , Algw.Ast
                      , Algw.Type
                      , Algw.Infer
+                     , Algw.Env
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , pretty

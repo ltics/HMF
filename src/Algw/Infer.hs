@@ -5,6 +5,7 @@ module Algw.Infer where
 
 import Algw.Ast
 import Algw.Type
+import Algw.Env
 import State
 import Data.IORef
 import Data.Maybe
@@ -47,23 +48,23 @@ instantiate newVar t = let boundVars = allVars t `S.difference` freeVars t
 occurs :: TName -> T -> Bool
 occurs a t = a `S.member` freeVars t
 
-makeSingleSubrule :: TName -> T -> Subrule
+makeSingleSubrule :: TName -> T -> Infer Subrule
 makeSingleSubrule a t
-  | t == TVar a = emptyRule
+  | t == TVar a = return emptyRule
   | occurs a t = error "occurs check fails"
-  | otherwise = M.singleton a t
+  | otherwise = return $ M.singleton a t
 
 -- find mgu(most general unifier) of two types
-unify :: T -> T -> Subrule
-unify TInt TInt = emptyRule
-unify TBool TBool = emptyRule
+unify :: T -> T -> Infer Subrule
+unify TInt TInt = return emptyRule
+unify TBool TBool = return emptyRule
 unify (TVar n) t = makeSingleSubrule n t
 unify t (TVar n) = makeSingleSubrule n t
-unify (TArrow tl1 tr1) (TArrow tl2 tr2) =
-  let s1 = unify tl1 tl2
-      s2 = subst s1 tr1 `unify` subst s1 tr2
-  in s2 `compose` s1
-unify _ _ = error "types do not unify"
+unify (TArrow tl1 tr1) (TArrow tl2 tr2) = do
+      s1 <- unify tl1 tl2
+      s2 <- subst s1 tr1 `unify` subst s1 tr2
+      return $ s2 `compose` s1
+unify t1 t2 = error $ "types do not unify: " ++ show t1 ++ " vs. " ++ show t2
 
 -- just like assoc in clojure
 assocEnv :: TName -> Scheme -> Env -> Env
@@ -91,7 +92,7 @@ algw newVar env (EApp e1 e2) = do
   (s1, m1) <- algw newVar env e1
   (s2, m2) <- algw newVar (subst s1 env) e2
   fresh <- fmap TVar newVar
-  let s3 = unify (subst s2 m1) (TArrow m2 fresh)
+  s3 <- unify (subst s2 m1) (TArrow m2 fresh)
   return (s3 `compose` s2 `compose` s1, subst s3 fresh)
 
 algw newVar env (ELet name value body) = do
