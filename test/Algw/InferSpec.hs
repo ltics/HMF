@@ -44,5 +44,31 @@ spec = do
         failInferSpecCase (EAbs "f" $ EApp (EVar "f") (EVar "f")) "occurs check fails"
         failInferSpecCase (EApp (EApp (EVar "add") (EVar "true")) (EVar "false")) "types do not unify: int vs. bool"
         failInferSpecCase (EVar "x") "unbound variable: x"
+        runInferSpecCase (EApp (EVar "id") (EApp (EVar "id") (EVar "one"))) "int"
+        runInferSpecCase (EAbs "a"
+                            (ELet "x"
+                                (EAbs "b"
+                                      (ELet "y"
+                                            (EAbs "c" (EApp (EVar "a") (EVar "zero")))
+                                            (EApp (EVar "y") (EVar "one"))))
+                                (EApp (EVar "x") (EVar "one")))) "∀h. (int → h) → h"
+        failInferSpecCase (EAbs "a" (EAbs "b"
+                                          (EApp (EVar "b")
+                                                (EApp (EVar "a")
+                                                      (EApp (EVar "a") (EVar "b")))))) "occurs check fails"
 
-
+        runInferSpecCase (EApp (EApp (EVar "choose")
+                                     (EAbs "a"
+                                           (EAbs "b"
+                                                 (EVar "a"))))
+                               (EAbs "a"
+                                     (EAbs "b"
+                                           (EVar "b")))) "∀f. f → f → f"
+        runInferSpecCase (EAbs "x"
+                               (EAbs "y"
+                               (ELet "x"
+                                     (EApp (EVar "x")
+                                           (EVar "y"))
+                                     (EAbs "x"
+                                           (EApp (EVar "y")
+                                                 (EVar "x")))))) "∀c. ∀d. ∀e. ((d → e) → c) → (d → e) → d → e"

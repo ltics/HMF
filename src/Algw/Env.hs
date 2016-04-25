@@ -32,4 +32,5 @@ assumptions = M.fromList
      ("compose", Poly "a" $ Poly "b" $ Poly "c" $ Mono $
         (TVar "b" `TArrow` TVar "c") `TArrow`
         ((TVar "a" `TArrow` TVar "b") `TArrow` (TVar "a" `TArrow` TVar "c"))),
+     ("choose", Poly "a" $ Mono $ TVar "a" `TArrow` (TVar "a" `TArrow` TVar "a")),
      ("wrong", Poly "a" $ Mono $ TVar "a")]
