@@ -173,5 +173,6 @@ infer env level e = case e of
                             fnTy <- infer env level fn
                             (paramTyList, rtnTy) <- matchFunType (length args) fnTy
                             argTyList <- mapM (infer env level) args
-                            mapM_ (uncurry unify) $ zip paramTyList argTyList
+                            --mapM_ (uncurry unify) $ zip paramTyList argTyList
+                            zipWithM_ unify paramTyList argTyList
                             return rtnTy

@@ -51,7 +51,7 @@ idNameMapReset = writeIORef idNameMap M.empty
 countReset :: Infer ()
 countReset = writeIORef count 0
 
-prType' :: T -> Infer TName
+prType' :: T -> Infer String
 prType' t =
     case t of
          TConst name -> return name

@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wall #-}
+
 module State where
 
 import Data.IORef
@@ -21,5 +23,17 @@ nextId = do
     return v
 
 resetId :: Infer ()
-resetId = do
-    writeIORef currentId 0
+resetId = writeIORef currentId 0
+
+currentUniqueName :: IORef Char
+currentUniqueName = createState 'α'
+
+nextUniqueName :: Infer String
+nextUniqueName = do
+    char <- readIORef currentUniqueName
+    let nextChar = succ char
+    writeIORef currentUniqueName nextChar
+    return [char]
+
+resetUniqueName :: Infer ()
+resetUniqueName = writeIORef currentUniqueName 'α'
