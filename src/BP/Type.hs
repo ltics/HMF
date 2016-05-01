@@ -13,6 +13,7 @@ type TName = String
 type TVarInstance = Maybe Type
 type TVarName = Maybe String
 type TOpTypes = [Type]
+type Types = [Type]
 
 data Type = TypeVariable Id (IORef TVarInstance) (IORef TVarName) -- if instance is Nothing then the type variable is unbound
           | TypeOperator TName TOpTypes
@@ -54,7 +55,8 @@ stringOfType (TypeVariable _ inst name) = do
 stringOfType (TypeOperator name types) = case length types of
                                           0 -> return name
                                           2 -> return $ "(" ++ unwords [show (types!!0), name, show (types!!1)] ++ ")"
-                                          _ -> return $ name ++ "[" ++ intercalate "," (map show types) ++ "]"
+                                          _ | name == "→" -> return $ "(" ++ intercalate ", " (map show $ init types) ++ ") → " ++ (show . last) types
+                                            | otherwise -> return $ name ++ "[" ++ intercalate ", " (map show types) ++ "]"
 
 intT :: Type
 intT = TypeOperator "int" []
@@ -67,6 +69,10 @@ type ToT = Type
 
 functionT :: FromT -> ToT -> Type
 functionT fromType toType = TypeOperator "→" [fromType, toType]
+
+-- function with mutliple parameters, the list of types is the return type
+functionMT :: Types -> Type
+functionMT = TypeOperator "→"
 
 makeVariable :: Infer Type
 makeVariable = do

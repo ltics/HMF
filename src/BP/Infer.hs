@@ -8,7 +8,7 @@ import BP.Env
 import State
 import Data.IORef
 import Text.Read (readMaybe)
-import Control.Monad (when, zipWithM_)
+import Control.Monad (when, zipWithM_, foldM)
 import Control.Monad.Loops (anyM)
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -95,6 +95,26 @@ analyze term env nonGeneric = case term of
                                   argT <- makeVariable
                                   rtnT <- analyze body (M.insert arg argT env) (S.insert argT nonGeneric) -- non generic on lambda arg type
                                   return $ functionT argT rtnT
+                                Function params body annoT -> do
+                                  (types, newEnv, newNonGeneric) <- foldM (\(types', env', nonGeneric') (ParamWithOptionalType name t) -> case t of
+                                                                                                                                            Just t' -> return (types' ++ [t'], M.insert name t' env', S.insert t' nonGeneric')
+                                                                                                                                            Nothing -> do
+                                                                                                                                              t' <- makeVariable
+                                                                                                                                              return (types' ++ [t'], M.insert name t' env', S.insert t' nonGeneric'))
+                                                                          ([], env, nonGeneric) params
+                                  rtnT <- analyze body newEnv newNonGeneric
+                                  let newTypes = types ++ [rtnT]
+                                  case annoT of
+                                    Just annoT' -> unify rtnT annoT'
+                                    Nothing -> return ()
+                                  return $ functionMT newTypes
+                                Call fn args -> do
+                                  types <- mapM (\arg -> analyze arg env nonGeneric) args
+                                  rtnT <- makeVariable
+                                  let newTypes = types ++ [rtnT]
+                                  fnT <- analyze fn env nonGeneric
+                                  unify (functionMT newTypes) fnT
+                                  return rtnT
                                 Let n def body -> do
                                   defT <- analyze def env nonGeneric
                                   analyze body (M.insert n defT env) nonGeneric
