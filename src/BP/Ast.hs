@@ -16,7 +16,7 @@ stringOfTerm :: Term -> String
 stringOfTerm t = case t of
                   Ident n -> n
                   Lambda v b -> "λ" ++ v ++ " → " ++ stringOfTerm b
-                  Apply fn arg -> stringOfTerm fn ++ "(" ++ stringOfTerm arg ++ ")"
+                  Apply fn arg -> "(" ++ stringOfTerm fn ++ " " ++ stringOfTerm arg ++ ")"
                   Let v def body -> "let " ++ v ++ " = " ++ stringOfTerm def ++ " in " ++ stringOfTerm body
                   LetRec v def body -> "letrec " ++ v ++ " = " ++ stringOfTerm def ++ " in " ++ stringOfTerm body
 

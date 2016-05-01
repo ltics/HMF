@@ -15,11 +15,6 @@ import qualified Data.Set as S
 
 type NonGeneric = (S.Set Type)
 
-makeVariable :: Infer Type
-makeVariable = do
-    next <- nextId
-    return $ TypeVariable next (createState Nothing) (createState Nothing)
-
 prune :: Type -> Infer Type
 prune t = case t of
             TypeVariable _ inst _ -> do
@@ -84,7 +79,7 @@ unify t1 t2 = do
                                           writeIORef inst $ Just b
     (a@(TypeOperator _ _), b@(TypeVariable _ _ _)) -> unify b a
     (a@(TypeOperator name1 types1), b@(TypeOperator name2 types2)) -> if name1 /= name2 || (length types1) /= (length types2)
-                                                                     then error $ "Type mismatch " ++ show a ++ " /= " ++ show b
+                                                                     then error $ "Type mismatch " ++ show a ++ " ≠ " ++ show b
                                                                      else zipWithM_ unify types1 types2
 
 analyze :: Term -> Env -> NonGeneric -> Infer Type
@@ -109,4 +104,3 @@ analyze term env nonGeneric = case term of
                                   defT <- analyze def newEnv (S.insert newT nonGeneric)
                                   unify newT defT
                                   analyze body newEnv nonGeneric
-

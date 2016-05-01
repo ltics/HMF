@@ -67,3 +67,10 @@ type ToT = Type
 
 functionT :: FromT -> ToT -> Type
 functionT fromType toType = TypeOperator "→" [fromType, toType]
+
+makeVariable :: Infer Type
+makeVariable = do
+    next <- nextId
+    instRef <- newIORef Nothing
+    nameRef <- newIORef Nothing
+    return $ TypeVariable next instRef nameRef
