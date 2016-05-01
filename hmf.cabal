@@ -29,6 +29,7 @@ library
                      , BP.Ast
                      , BP.Type
                      , BP.Infer
+                     , BP.Env
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , pretty

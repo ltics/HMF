@@ -26,6 +26,15 @@ instance Eq Type where
     TypeOperator name1 types1 == TypeOperator name2 types2 = name1 == name2 && types1 == types2
     _ == _ = False
 
+instance Ord Type where
+    TypeVariable id1 inst1 vname1 <= TypeVariable id2 inst2 vname2 = id1 <= id2 && instV1 <= instV2 && vnameV1 <= vnameV2 where
+                                                                          instV1 = readState inst1
+                                                                          instV2 = readState inst2
+                                                                          vnameV1 = readState vname1
+                                                                          vnameV2 = readState vname2
+    TypeOperator name1 types1 <= TypeOperator name2 types2 = name1 <= name2 && types1 <= types2
+    _ <= _ = False
+
 instance Show Type where
     showsPrec _ x = shows $ PP.text $ unsafePerformIO $ stringOfType x
 
