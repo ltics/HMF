@@ -53,7 +53,7 @@ stringOfType (TypeVariable _ inst name) = do
           return newVarName
 stringOfType (TypeOperator name types) = case length types of
                                           0 -> return name
-                                          2 -> return $ "(" ++ show (types!!0) ++ name ++ show (types!!1) ++ ")"
+                                          2 -> return $ "(" ++ unwords [show (types!!0), name, show (types!!1)] ++ ")"
                                           _ -> return $ name ++ "[" ++ intercalate "," (map show types) ++ "]"
 
 intT :: Type
