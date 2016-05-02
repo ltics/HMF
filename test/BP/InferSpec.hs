@@ -44,3 +44,6 @@ spec = describe "inference test" $
           runInferSpecCase (Apply (Ident "f") $ Ident "3") "int"
           runInferSpecCase (Apply (Ident "f") $ Ident "true") "bool"
           runInferSpecCase (Let "f" (Lambda "x" $ Ident "x") $ Apply (Ident "f") $ Ident "3") "int"
+          runInferSpecCase (Function "implicitParamType" [Param "x" Nothing] (Ident "x") Nothing) "(α → α)"
+          runInferSpecCase (Function "explicitParamType" [Param "x" (Just intT)] (Ident "x") Nothing) "(int → int)"
+          runInferSpecCase (Function "explicitReturnType" [Param "x" Nothing] (Ident "x") (Just intT)) "(int → int)"

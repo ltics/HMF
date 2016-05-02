@@ -8,27 +8,27 @@ import qualified Text.PrettyPrint as PP
 
 type EName = String
 type Terms = [Term]
-data ParamWithOptionalType = ParamWithOptionalType EName (Maybe Type)
+data ParamWithOptionalType = Param EName (Maybe Type)
 
 data Term = Ident EName
           | Lambda EName Term
-          | Function [ParamWithOptionalType] Term (Maybe Type)
+          | Function EName [ParamWithOptionalType] Term (Maybe Type)
           | Apply Term Term
           | Call Term Terms
           | Let EName Term Term
           | LetRec EName Term Term
 
 stringOfParam :: ParamWithOptionalType -> String
-stringOfParam (ParamWithOptionalType name t) = case t of
-                                                Just t' -> name ++ " : " ++ show t'
-                                                Nothing -> name
+stringOfParam (Param name t) = case t of
+                                Just t' -> name ++ " : " ++ show t'
+                                Nothing -> name
 
 stringOfTerm :: Term -> String
 stringOfTerm t = case t of
                   Ident n -> n
                   Lambda v b -> "λ" ++ v ++ " → " ++ stringOfTerm b
                   --Function
-                  Function params body rtnType -> "ƒ(" ++ intercalate ", " (map stringOfParam params) ++ ") → " ++ case rtnType of
+                  Function name params body rtnType -> "ƒ " ++ name ++ "(" ++ intercalate ", " (map stringOfParam params) ++ ") → " ++ case rtnType of
                                                                                                                     Just t' -> stringOfTerm body ++ " : " ++ show t'
                                                                                                                     Nothing -> stringOfTerm body
                   Apply fn arg -> "(" ++ stringOfTerm fn ++ " " ++ stringOfTerm arg ++ ")"
