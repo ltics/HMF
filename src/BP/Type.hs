@@ -5,6 +5,7 @@ module BP.Type where
 import State
 import Data.IORef
 import Data.List(intercalate)
+import Text.Format(format)
 import System.IO.Unsafe(unsafePerformIO)
 import qualified Text.PrettyPrint as PP
 
@@ -54,9 +55,9 @@ stringOfType (TypeVariable _ inst name) = do
           return newVarName
 stringOfType (TypeOperator name types) = case length types of
                                           0 -> return name
-                                          2 -> return $ "(" ++ unwords [show (types!!0), name, show (types!!1)] ++ ")"
-                                          _ | name == "→" -> return $ "(" ++ intercalate ", " (map show $ init types) ++ ") → " ++ (show . last) types
-                                            | otherwise -> return $ name ++ "[" ++ intercalate ", " (map show types) ++ "]"
+                                          2 -> return $ format "({0})" [unwords [show (types!!0), name, show (types!!1)]]
+                                          _ | name == "→" -> return $ format "({0}) → {1}" [intercalate ", " (map show $ init types), (show . last) types]
+                                            | otherwise -> return $ format "{0}[{1}]" [name, intercalate ", " (map show types)]
 
 intT :: Type
 intT = TypeOperator "int" []
