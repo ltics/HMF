@@ -107,7 +107,7 @@ analyze term env nonGeneric = case term of
                                   (_, rtnT) <- analyze body newEnv newNonGeneric
                                   let newTypes = types ++ [rtnT]
                                   case annoT of
-                                    Just annoT' -> unify rtnT annoT'
+                                    Just annoT' -> unify rtnT annoT' -- type propagation from return type to param type
                                     Nothing -> return ()
                                   let functionType = functionMT newTypes
                                   return $ (M.insert fnName functionType env, functionType)
@@ -124,7 +124,7 @@ analyze term env nonGeneric = case term of
                                 LetBinding n def annoT -> do
                                   (_, defT) <- analyze def env nonGeneric
                                   case annoT of
-                                    Just annoT' -> unify defT annoT'
+                                    Just annoT' -> unify defT annoT' -- type checking
                                     Nothing -> return ()
                                   return (M.insert n defT env, defT)
                                 LetRec n def body -> do
