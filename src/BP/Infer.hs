@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
+{-# LANGUAGE TupleSections #-}
 
 module BP.Infer where
 
@@ -82,20 +83,20 @@ unify t1 t2 = do
                                                                      then error $ "Type mismatch " ++ show a ++ " ≠ " ++ show b
                                                                      else zipWithM_ unify types1 types2
 
-analyze :: Term -> Env -> NonGeneric -> Infer Type
+analyze :: Term -> Env -> NonGeneric -> Infer (Env, Type)
 analyze term env nonGeneric = case term of
-                                Ident name -> getType name env nonGeneric
+                                Ident name -> (env,) <$> getType name env nonGeneric
                                 Apply fn arg -> do
-                                  fnT <- analyze fn env nonGeneric
-                                  argT <- analyze arg env nonGeneric
+                                  (_, fnT) <- analyze fn env nonGeneric
+                                  (_, argT) <- analyze arg env nonGeneric
                                   rtnT <- makeVariable
                                   unify (functionT argT rtnT) fnT
-                                  return rtnT
+                                  return (env, rtnT)
                                 Lambda arg body -> do
                                   argT <- makeVariable
-                                  rtnT <- analyze body (M.insert arg argT env) (S.insert argT nonGeneric) -- non generic on lambda arg type
-                                  return $ functionT argT rtnT
-                                Function _ params body annoT -> do
+                                  (_, rtnT) <- analyze body (M.insert arg argT env) (S.insert argT nonGeneric) -- non generic on lambda arg type
+                                  return $ (env, functionT argT rtnT)
+                                Function fnName params body annoT -> do
                                   (types, newEnv, newNonGeneric) <- foldM (\(types', env', nonGeneric') (Param name t) ->
                                                                           case t of
                                                                             Just t' -> return (types' ++ [t'], M.insert name t' env', S.insert t' nonGeneric')
@@ -103,25 +104,32 @@ analyze term env nonGeneric = case term of
                                                                               t' <- makeVariable
                                                                               return (types' ++ [t'], M.insert name t' env', S.insert t' nonGeneric'))
                                                                           ([], env, nonGeneric) params
-                                  rtnT <- analyze body newEnv newNonGeneric
+                                  (_, rtnT) <- analyze body newEnv newNonGeneric
                                   let newTypes = types ++ [rtnT]
                                   case annoT of
                                     Just annoT' -> unify rtnT annoT'
                                     Nothing -> return ()
-                                  return $ functionMT newTypes
+                                  let functionType = functionMT newTypes
+                                  return $ (M.insert fnName functionType env, functionType)
                                 Call fn args -> do
-                                  types <- mapM (\arg -> analyze arg env nonGeneric) args
+                                  types <- mapM (\arg -> snd <$> analyze arg env nonGeneric) args
                                   rtnT <- makeVariable
                                   let newTypes = types ++ [rtnT]
-                                  fnT <- analyze fn env nonGeneric
+                                  (_, fnT) <- analyze fn env nonGeneric
                                   unify (functionMT newTypes) fnT
-                                  return rtnT
+                                  return (env, rtnT)
                                 Let n def body -> do
-                                  defT <- analyze def env nonGeneric
+                                  (_, defT) <- analyze def env nonGeneric
                                   analyze body (M.insert n defT env) nonGeneric
+                                LetBinding n def annoT -> do
+                                  (_, defT) <- analyze def env nonGeneric
+                                  case annoT of
+                                    Just annoT' -> unify defT annoT'
+                                    Nothing -> return ()
+                                  return (M.insert n defT env, defT)
                                 LetRec n def body -> do
                                   newT <- makeVariable
                                   let newEnv = M.insert n newT env
-                                  defT <- analyze def newEnv (S.insert newT nonGeneric)
+                                  (_, defT) <- analyze def newEnv (S.insert newT nonGeneric)
                                   unify newT defT
                                   analyze body newEnv nonGeneric

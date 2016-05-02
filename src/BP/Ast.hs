@@ -16,6 +16,7 @@ data Term = Ident EName
           | Apply Term Term
           | Call Term Terms
           | Let EName Term Term
+          | LetBinding EName Term (Maybe Type)
           | LetRec EName Term Term
 
 stringOfParam :: ParamWithOptionalType -> String
@@ -28,12 +29,16 @@ stringOfTerm t = case t of
                   Ident n -> n
                   Lambda v b -> "λ" ++ v ++ " → " ++ stringOfTerm b
                   --Function
-                  Function name params body rtnType -> "ƒ " ++ name ++ "(" ++ intercalate ", " (map stringOfParam params) ++ ") → " ++ case rtnType of
-                                                                                                                    Just t' -> stringOfTerm body ++ " : " ++ show t'
-                                                                                                                    Nothing -> stringOfTerm body
+                  Function name params body rtnType -> "ƒ " ++ name ++ "(" ++ intercalate ", " (map stringOfParam params) ++ ") → "
+                                                      ++ stringOfTerm body ++ case rtnType of
+                                                                                Just t' -> " : " ++ show t'
+                                                                                Nothing -> ""
                   Apply fn arg -> "(" ++ stringOfTerm fn ++ " " ++ stringOfTerm arg ++ ")"
                   Call fn args -> "(" ++ stringOfTerm fn ++ intercalate ", " (map stringOfTerm args) ++ ")"
                   Let v def body -> "let " ++ v ++ " = " ++ stringOfTerm def ++ " in " ++ stringOfTerm body
+                  LetBinding v def ty -> "let " ++ v ++ stringOfTerm def ++ case ty of
+                                                                            Just ty' -> " : " ++ show ty'
+                                                                            Nothing -> ""
                   LetRec v def body -> "letrec " ++ v ++ " = " ++ stringOfTerm def ++ " in " ++ stringOfTerm body
 
 instance Show Term where

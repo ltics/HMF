@@ -5,6 +5,7 @@ import BP.Type
 import BP.Infer
 import BP.Env
 import State (resetId, resetUniqueName)
+import Control.Monad (foldM)
 import qualified Text.PrettyPrint as PP
 import qualified Data.Set as S
 import Test.Hspec
@@ -12,10 +13,21 @@ import Test.Hspec
 runInferSpecCase :: Term -> String -> IO ()
 runInferSpecCase expr expect = do
     assumps <- assumptions
-    t <- analyze expr assumps S.empty
+    (_, t) <- analyze expr assumps S.empty
     resetId
     resetUniqueName
     (PP.text . show $ t) `shouldBe` PP.text expect
+
+runInferSpecCases :: [Term] -> [String] -> IO ()
+runInferSpecCases exprs expects = do
+    assumps <- assumptions
+    (_, types) <- foldM (\(env, types) expr -> do
+                                        (env', ty) <- analyze expr env S.empty
+                                        return (env', types ++ [ty]))
+                    (assumps, []) exprs
+    resetId
+    resetUniqueName
+    (map (PP.text . show) types) `shouldBe` map PP.text expects
 
 failInferSpecCase :: Term -> String -> IO ()
 failInferSpecCase expr error = do
@@ -47,3 +59,19 @@ spec = describe "inference test" $
           runInferSpecCase (Function "implicitParamType" [Param "x" Nothing] (Ident "x") Nothing) "(α → α)"
           runInferSpecCase (Function "explicitParamType" [Param "x" (Just intT)] (Ident "x") Nothing) "(int → int)"
           runInferSpecCase (Function "explicitReturnType" [Param "x" Nothing] (Ident "x") (Just intT)) "(int → int)"
+          runInferSpecCases [LetBinding "a" (Ident "10") (Just intT),
+                             LetBinding "id" (Lambda "x" $ Ident "x") Nothing,
+                             Call (Ident "id") [Ident "a"]]
+                            ["int", "(α → α)", "int"]
+          runInferSpecCases [LetBinding "a" (Ident "10") (Just intT),
+                             LetBinding "id" (Lambda "x" $ Ident "x") (Just $ functionT intT intT),
+                             Call (Ident "id") [Ident "a"]]
+                            ["int", "(int → int)", "int"]
+          runInferSpecCases [LetBinding "a" (Ident "10") Nothing,
+                             LetBinding "id" (Lambda "x" $ Ident "x") (Just $ functionT intT intT),
+                             Call (Ident "id") [Ident "a"]]
+                            ["int", "(int → int)", "int"]
+          runInferSpecCases [LetBinding "a" (Ident "10") Nothing,
+                             LetBinding "id" (Lambda "x" $ Ident "x") (Just $ functionMT [intT, intT]),
+                             Call (Ident "id") [Ident "a"]]
+                            ["int", "(int → int)", "int"]
