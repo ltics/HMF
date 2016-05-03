@@ -32,7 +32,7 @@ nextUniqueName :: Infer String
 nextUniqueName = do
     char <- readIORef currentUniqueName
     if char == 'ω'
-    then writeIORef currentUniqueName 'α'
+    then resetUniqueName
     else writeIORef currentUniqueName $ succ char
     return [char]
 
