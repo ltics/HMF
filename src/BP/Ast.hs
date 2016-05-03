@@ -34,7 +34,7 @@ stringOfTerm t = case t of
                                                                                 Just t' -> " : " ++ show t'
                                                                                 Nothing -> ""
                   Apply fn arg -> "(" ++ stringOfTerm fn ++ " " ++ stringOfTerm arg ++ ")"
-                  Call fn args -> "(" ++ stringOfTerm fn ++ intercalate ", " (map stringOfTerm args) ++ ")"
+                  Call fn args -> "(" ++ stringOfTerm fn ++ " " ++ intercalate ", " (map stringOfTerm args) ++ ")"
                   Let v def body -> "let " ++ v ++ " = " ++ stringOfTerm def ++ " in " ++ stringOfTerm body
                   LetBinding v def ty -> "let " ++ v ++ stringOfTerm def ++ case ty of
                                                                             Just ty' -> " : " ++ show ty'

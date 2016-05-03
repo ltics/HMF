@@ -59,6 +59,9 @@ spec = describe "inference test" $
           runInferSpecCase (Function "implicitParamType" [Param "x" Nothing] (Ident "x") Nothing) "(α → α)"
           runInferSpecCase (Function "explicitParamType" [Param "x" (Just intT)] (Ident "x") Nothing) "(int → int)"
           runInferSpecCase (Function "explicitReturnType" [Param "x" Nothing] (Ident "x") (Just intT)) "(int → int)"
+          tvarA <- makeVariable
+          -- parametric polymorphism
+          runInferSpecCase (Function "explicitParamType" [Param "id" (Just $ functionT tvarA tvarA)] (Apply (Ident "id") $ Ident "3") Nothing) "((int → int) → int)"
           runInferSpecCases [LetBinding "a" (Ident "10") (Just intT),
                              LetBinding "id" (Lambda "x" $ Ident "x") Nothing,
                              Call (Ident "id") [Ident "a"]]
