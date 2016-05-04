@@ -72,8 +72,8 @@ functionT :: FromT -> ToT -> Type
 functionT fromType toType = TypeOperator "→" [fromType, toType]
 
 -- function with mutliple parameters, the list of types is the return type
-functionMT :: Types -> Type
-functionMT = TypeOperator "→"
+functionMT :: Types -> Type -> Type
+functionMT paramTypes returnType = TypeOperator "→" $ paramTypes ++ [returnType]
 
 makeVariable :: Infer Type
 makeVariable = do

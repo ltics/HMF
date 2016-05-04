@@ -105,18 +105,16 @@ analyze term env nonGeneric = case term of
                                                                               return (types' ++ [t'], M.insert name t' env', S.insert t' nonGeneric'))
                                                                           ([], env, nonGeneric) params
                                   (_, rtnT) <- analyze body newEnv newNonGeneric
-                                  let newTypes = types ++ [rtnT]
                                   case annoT of
                                     Just annoT' -> unify rtnT annoT' -- type propagation from return type to param type
                                     Nothing -> return ()
-                                  let functionType = functionMT newTypes
+                                  let functionType = functionMT types rtnT
                                   return $ (M.insert fnName functionType env, functionType)
                                 Call fn args -> do
                                   types <- mapM (\arg -> snd <$> analyze arg env nonGeneric) args
                                   rtnT <- makeVariable
-                                  let newTypes = types ++ [rtnT]
                                   (_, fnT) <- analyze fn env nonGeneric
-                                  unify (functionMT newTypes) fnT
+                                  unify (functionMT types rtnT) fnT
                                   return (env, rtnT)
                                 Let n def body -> do
                                   (_, defT) <- analyze def env nonGeneric

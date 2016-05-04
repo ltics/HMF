@@ -75,6 +75,6 @@ spec = describe "inference test" $
                              Call (Ident "id") [Ident "a"]]
                             ["int", "(int → int)", "int"]
           runInferSpecCases [LetBinding "a" (Ident "10") Nothing,
-                             LetBinding "id" (Lambda "x" $ Ident "x") (Just $ functionMT [intT, intT]),
+                             LetBinding "id" (Lambda "x" $ Ident "x") (Just $ functionMT [intT] intT),
                              Call (Ident "id") [Ident "a"]]
                             ["int", "(int → int)", "int"]
