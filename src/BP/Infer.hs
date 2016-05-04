@@ -95,7 +95,7 @@ analyze term env nonGeneric = case term of
                                 Lambda arg body -> do
                                   argT <- makeVariable
                                   (_, rtnT) <- analyze body (M.insert arg argT env) (S.insert argT nonGeneric) -- non generic on lambda arg type
-                                  return $ (env, functionT argT rtnT)
+                                  return (env, functionT argT rtnT)
                                 Function fnName params body annoT -> do
                                   (types, newEnv, newNonGeneric) <- foldM (\(types', env', nonGeneric') (Param name t) ->
                                                                           case t of
@@ -109,7 +109,7 @@ analyze term env nonGeneric = case term of
                                     Just annoT' -> unify rtnT annoT' -- type propagation from return type to param type
                                     Nothing -> return ()
                                   let functionType = functionMT types rtnT
-                                  return $ (M.insert fnName functionType env, functionType)
+                                  return (M.insert fnName functionType env, functionType)
                                 Call fn args -> do
                                   types <- mapM (\arg -> snd <$> analyze arg env nonGeneric) args
                                   rtnT <- makeVariable
