@@ -45,6 +45,7 @@ spec = describe "inference test" $
           failInferSpecCase (Apply (Apply (Ident "pair") $ Apply (Ident "g") $ Ident "3") $ Apply (Ident "g") $ Ident "true") "Undefined symbol g"
           runInferSpecCase (Lambda "x" $ Ident "x") "(α → α)"
           runInferSpecCase (Apply (Ident "zero?") $ Ident "3") "bool"
+          -- let polymorphism
           runInferSpecCase (Let "f" (Lambda "x" $ Ident "x") pairE) "(int * bool)"
           failInferSpecCase (Lambda "f" $ Apply (Ident "f") $ Ident "f") "Recusive unification"
           runInferSpecCase (Let "g" (Lambda "f" $ Ident"5") $ Apply (Ident "g") $ Ident "g") "int"
