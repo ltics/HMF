@@ -61,9 +61,16 @@ spec = describe "inference test" $
           runInferSpecCase (Function "explicitParamType" [Param "x" (Just intT)] (Ident "x") Nothing) "(int → int)"
           runInferSpecCase (Function "explicitReturnType" [Param "x" Nothing] (Ident "x") (Just intT)) "(int → int)"
           tvarA <- makeVariable
-          -- parametric polymorphism
+          -- not support parametric polymorphism
           runInferSpecCase (Function "explicitParamType" [Param "id" (Just $ functionT tvarA tvarA)] (Apply (Ident "id") $ Ident "3") Nothing) "((int → int) → int)"
           failInferSpecCase (Function "explicitParamType" [Param "id" (Just $ functionT tvarA tvarA)] (Apply (Apply (Ident "pair") $ Apply (Ident "id") $ Ident "3") $ Apply (Ident "id") $ Ident "true") Nothing) "Type mismatch bool ≠ int"
+          -- basic polymorphism
+          runInferSpecCases [LetBinding "a" (Ident "10") (Just intT),
+                             LetBinding "b" (Ident "true") Nothing,
+                             LetBinding "id" (Lambda "x" $ Ident "x") Nothing,
+                             Call (Ident "id") [Ident "a"],
+                             Call (Ident "id") [Ident "b"]]
+                            ["int", "bool", "(α → α)", "int", "bool"]
           runInferSpecCases [LetBinding "a" (Ident "10") (Just intT),
                              LetBinding "id" (Lambda "x" $ Ident "x") Nothing,
                              Call (Ident "id") [Ident "a"]]
