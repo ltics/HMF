@@ -44,7 +44,6 @@ spec = do
         failInferSpecCase (EAbs "f" $ EApp (EVar "f") (EVar "f")) "occurs check fails"
         failInferSpecCase (EApp (EApp (EVar "add") (EVar "true")) (EVar "false")) "types do not unify: int vs. bool"
         failInferSpecCase (EVar "x") "unbound variable: x"
-        runInferSpecCase (EApp (EVar "id") (EApp (EVar "id") (EVar "one"))) "int"
         runInferSpecCase (EAbs "a"
                             (ELet "x"
                                 (EAbs "b"
